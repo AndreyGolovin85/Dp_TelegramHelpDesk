@@ -1,0 +1,5 @@
+flask==2.3.3
+psycopg2==2.9.9
+Flask-SQLAlchemy==2.5.1
+SQLAlchemy==1.4.52
+prettytable==3.10.0
