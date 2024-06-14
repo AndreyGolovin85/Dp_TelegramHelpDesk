@@ -42,7 +42,6 @@ async def cmd_tickets(message: types.Message, command: CommandObject):
         await message.reply("Proper usage of this command: */new_ticket <your issue here>*",
                             parse_mode=ParseMode.MARKDOWN)
     else:
-        print(command.args)
         tickets.append(
             {"user_id": str(message.chat.id), "title": f"{message.from_user.full_name}'s issue", "description": command.args,
              "status": "new"})
