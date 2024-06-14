@@ -15,7 +15,7 @@ load_dotenv()
 bot = Bot(token=os.getenv("API_TOKEN"))
 dispatcher = Dispatcher()
 
-tickets = [{"user_id": "id_tg_user", "title": "Название", "description": "описание", "status": "new"}]
+tickets = [{"user_id": 0, "title": "Тестовое название", "description": "Тестовое описание", "status": "new"}]
 
 
 @dispatcher.message(Command("start"))
@@ -43,7 +43,7 @@ async def cmd_add_ticket(message: types.Message, command: CommandObject):
                             parse_mode=ParseMode.MARKDOWN)
     else:
         tickets.append(
-            {"user_id": str(message.chat.id), "title": f"{message.from_user.full_name}'s issue", "description": command.args,
+            {"user_id": message.chat.id, "title": f"{message.from_user.full_name}'s issue", "description": command.args,
              "status": "new"})
         reply = as_list(
             f"User ID: {tickets[-1]['user_id']}",
