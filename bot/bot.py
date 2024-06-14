@@ -37,7 +37,7 @@ async def cmd_tickets(message: types.Message):
 
 
 @dispatcher.message(Command("new_ticket"))
-async def cmd_tickets(message: types.Message, command: CommandObject):
+async def cmd_add_ticket(message: types.Message, command: CommandObject):
     if command.args is None:
         await message.reply("Proper usage of this command: */new_ticket <your issue here>*",
                             parse_mode=ParseMode.MARKDOWN)
