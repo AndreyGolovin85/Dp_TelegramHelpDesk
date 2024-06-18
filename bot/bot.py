@@ -24,6 +24,17 @@ async def cmd_start(message: types.Message):
     await message.answer("Hello!")
 
 
+def reply_list(item):
+    if not item:
+        item = tickets[-1]
+    return as_list(
+        f"User ID: {item['user_id']}",
+        f"Title: {item['title']}",
+        f"Description: {item['description']}",
+        f"Status: {item['status']}",
+        sep='\n')
+
+
 @dispatcher.message(Command("tickets"))
 async def cmd_tickets(message: types.Message, command: CommandObject):
     if message.chat.id != admin_id:
@@ -31,35 +42,20 @@ async def cmd_tickets(message: types.Message, command: CommandObject):
             await message.answer("! Do not insert arguments here !")
         for item in tickets:
             if message.chat.id == item['user_id']:
-                reply_text = as_list(
-                    f"User ID: {item['user_id']}",
-                    f"Title: {item['title']}",
-                    f"Description: {item['description']}",
-                    f"Status: {item['status']}",
-                    sep='\n')
+                reply_text = reply_list(item)
                 await message.answer(**reply_text.as_kwargs())
         return
 
     if command.args == "new":
         for item in tickets:
             if item['status'] == "new":
-                reply_text = as_list(
-                    f"User ID: {item['user_id']}",
-                    f"Title: {item['title']}",
-                    f"Description: {item['description']}",
-                    f"Status: {item['status']}",
-                    sep='\n')
+                reply_text = reply_list(item)
                 await message.answer(**reply_text.as_kwargs())
         return
 
     if command.args is None:
         for item in tickets:
-            reply_text = as_list(
-                f"User ID: {item['user_id']}",
-                f"Title: {item['title']}",
-                f"Description: {item['description']}",
-                f"Status: {item['status']}",
-                sep="\n")
+            reply_text = reply_list(item)
             await message.answer(**reply_text.as_kwargs())
         return
 
@@ -77,12 +73,7 @@ async def cmd_add_ticket(message: types.Message, command: CommandObject):
         "description": command.args,
         "status": "new"}
     tickets.append(ticket)
-    reply_text = as_list(
-        f"User ID: {ticket['user_id']}",
-        f"Title: {ticket['title']}",
-        f"Description: {ticket['description']}",
-        f"Status: {ticket['status']}",
-        sep='\n')
+    reply_text = reply_list(ticket)
     await message.reply(**reply_text.as_kwargs())
 
 
