@@ -24,8 +24,8 @@ async def cmd_start(message: types.Message):
     await message.answer("Hello!")
 
 
-def reply_list(item):
-    if not item:
+def reply_list(item=None):
+    if item is None:
         item = tickets[-1]
     return as_list(
         f"User ID: {item['user_id']}",
