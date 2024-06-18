@@ -27,6 +27,8 @@ async def cmd_start(message: types.Message):
 @dispatcher.message(Command("tickets"))
 async def cmd_tickets(message: types.Message, command: CommandObject):
     if message.chat.id != admin_id:
+        if command.args is not None:
+            await message.answer("! Do not insert arguments here !")
         for item in tickets:
             if message.chat.id == item['user_id']:
                 reply_text = as_list(
