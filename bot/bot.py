@@ -29,36 +29,36 @@ async def cmd_tickets(message: types.Message, command: CommandObject):
     if message.chat.id != admin_id:
         for item in tickets:
             if message.chat.id == item['user_id']:
-                reply = as_list(
+                reply_text = as_list(
                     f"User ID: {item['user_id']}",
                     f"Title: {item['title']}",
                     f"Description: {item['description']}",
                     f"Status: {item['status']}",
                     sep='\n')
-                await message.answer(**reply.as_kwargs())
+                await message.answer(**reply_text.as_kwargs())
         return
 
     if command.args == "new":
         for item in tickets:
             if item['status'] == "new":
-                reply = as_list(
+                reply_text = as_list(
                     f"User ID: {item['user_id']}",
                     f"Title: {item['title']}",
                     f"Description: {item['description']}",
                     f"Status: {item['status']}",
                     sep='\n')
-                await message.answer(**reply.as_kwargs())
+                await message.answer(**reply_text.as_kwargs())
         return
 
     if command.args is None:
         for item in tickets:
-            reply = as_list(
+            reply_text = as_list(
                 f"User ID: {item['user_id']}",
                 f"Title: {item['title']}",
                 f"Description: {item['description']}",
                 f"Status: {item['status']}",
                 sep="\n")
-            await message.answer(**reply.as_kwargs())
+            await message.answer(**reply_text.as_kwargs())
         return
 
 
