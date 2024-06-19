@@ -43,7 +43,7 @@ async def admin_notification(tickets_new):
     list_ticket = await check_tickets(tickets_new)
     for item in list_ticket:
         reply_text = reply_list(item)
-        await bot.send_message(chat_id=admin_id, text=f"Новая заявка: \n{reply_text.as_kwargs()['text']}")
+        await bot.send_message(chat_id=admin_id, text=f"Новая заявка: \n{reply_text.as_html()}")
 
 
 @dispatcher.message(Command("start"))
