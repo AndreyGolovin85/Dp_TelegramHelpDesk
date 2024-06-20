@@ -30,22 +30,6 @@ def reply_list(item=None):
         sep='\n')
 
 
-async def check_tickets(tickets_new):
-    ticket_list = []
-    for _, ticket in enumerate(tickets_new):
-        if ticket["status"] == "new":
-            ticket_list.append(ticket)
-
-    return ticket_list
-
-
-async def admin_notification(tickets_new):
-    list_ticket = await check_tickets(tickets_new)
-    for item in list_ticket:
-        reply_text = reply_list(item)
-        await bot.send_message(chat_id=admin_id, text=f"Новая заявка: \n{reply_text.as_html()}")
-
-
 @dispatcher.message(Command("start"))
 async def cmd_start(message: types.Message):
     await message.answer("Hello!")
@@ -90,8 +74,8 @@ async def cmd_add_ticket(message: types.Message, command: CommandObject):
         "status": "new"}
     tickets.append(ticket)
     reply_text = reply_list(ticket)
-    await admin_notification(tickets)
     await message.reply(**reply_text.as_kwargs())
+    await bot.send_message(chat_id=admin_id, text=f"Новая заявка: \n{reply_text.as_html()}")
 
 
 @dispatcher.message(Command("check_admin"))
