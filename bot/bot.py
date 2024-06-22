@@ -19,11 +19,6 @@ dispatcher = Dispatcher()
 tickets = [{"user_id": 0, "title": "Тестовое название", "description": "Тестовое описание", "status": "test"}]
 
 
-@dispatcher.message(Command("start"))
-async def cmd_start(message: types.Message):
-    await message.answer("Hello!")
-
-
 def reply_list(item=None):
     if item is None:
         item = tickets[-1]
@@ -33,6 +28,11 @@ def reply_list(item=None):
         f"Description: {item['description']}",
         f"Status: {item['status']}",
         sep='\n')
+
+
+@dispatcher.message(Command("start"))
+async def cmd_start(message: types.Message):
+    await message.answer("Hello!")
 
 
 @dispatcher.message(Command("tickets"))
@@ -75,6 +75,7 @@ async def cmd_add_ticket(message: types.Message, command: CommandObject):
     tickets.append(ticket)
     reply_text = reply_list(ticket)
     await message.reply(**reply_text.as_kwargs())
+    await bot.send_message(chat_id=admin_id, text=f"Новая заявка: \n{reply_text.as_html()}")
 
 
 @dispatcher.message(Command("check_admin"))
