@@ -67,7 +67,8 @@ async def send_message_users(callback: types.CallbackQuery):
     index_ticket = callback.data.split(":")[1]
     ticket = tickets[int(index_ticket)]
     ticket.update([("status", "in_work")])
-    await bot.send_message(chat_id=ticket["user_id"], text=f"Ваша заявка принята в работу.")
+    await bot.send_message(chat_id=ticket["user_id"], text=f"Ваша заявка: \n{reply_list(ticket).as_html()}"
+                                                           f"\nпринята в работу.")
     await callback.message.answer("Заявка принята.")
     await callback.answer()
 
