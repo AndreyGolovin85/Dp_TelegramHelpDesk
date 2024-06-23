@@ -62,6 +62,12 @@ async def cmd_tickets(message: types.Message, command: CommandObject):
         return
 
 
+def get_keyboard(text, call_data):
+    builder = InlineKeyboardBuilder()
+    builder.add(types.InlineKeyboardButton(text=text, callback_data=call_data))
+    return builder.as_markup()
+
+
 @dispatcher.callback_query(lambda call: call.data.startswith("accept_ticket:"))
 async def send_message_users(callback: types.CallbackQuery):
     index_ticket = callback.data.split(":")[1]
@@ -75,12 +81,8 @@ async def send_message_users(callback: types.CallbackQuery):
 
 async def admin_to_accept_button(reply_text, ticket):
     id_ = tickets.index(ticket)
-    builder = InlineKeyboardBuilder()
-    builder.add(types.InlineKeyboardButton(
-        text="Принять заявку",
-        callback_data=f"accept_ticket:{id_}"))
     await bot.send_message(chat_id=admin_id, text=f"Новая заявка: \n{reply_text.as_html()}",
-                           reply_markup=builder.as_markup())
+                           reply_markup=get_keyboard("Принять заявку", f"accept_ticket:{id_}"))
 
 
 @dispatcher.message(Command("new_ticket"))
