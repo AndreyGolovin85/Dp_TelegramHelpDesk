@@ -52,26 +52,23 @@ async def cmd_start(message: types.Message):
 
 @dispatcher.message(Command("tickets"))
 async def cmd_tickets(message: types.Message, command: CommandObject):
-    if message.chat.id != admin_id:
-        if command.args is not None:
+    command_args = command.args
+    user_id = message.chat.id
+    if user_id != admin_id:
+        if command_args is not None:
             await message.answer("! Do not insert arguments here !")
-        for item in tickets:
-            if message.chat.id == item['user_id']:
-                reply_text = reply_list(item)
-                await message.answer(**reply_text.as_kwargs())
+        reply_text = cmd_tickets_not_admin(user_id)
+        await message.answer(**reply_text.as_kwargs())
         return
 
-    if command.args == "new":
-        for item in tickets:
-            if item['status'] == "new":
-                reply_text = reply_list(item)
-                await message.answer(**reply_text.as_kwargs())
+    if command_args == "new":
+        reply_text = cmd_tickets_new(command_args)
+        await message.answer(**reply_text.as_kwargs())
         return
 
-    if command.args is None:
-        for item in tickets:
-            reply_text = reply_list(item)
-            await message.answer(**reply_text.as_kwargs())
+    if command_args is None:
+        reply_text = cmd_tickets_none()
+        await message.answer(**reply_text.as_kwargs())
         return
 
 
