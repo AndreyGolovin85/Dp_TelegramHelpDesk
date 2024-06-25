@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters.command import Command, CommandObject
 
-from utils import tickets_write, reply_list, cmd_tickets_new, cmd_tickets_none, cmd_tickets_not_admin
+from utils import reply_list, cmd_tickets_new, cmd_tickets_none, cmd_tickets_not_admin, ticket
 
 logging.basicConfig(level=logging.INFO)
 
@@ -52,12 +52,7 @@ async def cmd_add_ticket(message: types.Message, command: CommandObject):
                             parse_mode=ParseMode.MARKDOWN)
         return
 
-    user_id = message.chat.id
-    title = f"{message.from_user.full_name}'s issue"
-    description = command.args
-
-    ticket = tickets_write(description, title, user_id)
-    reply_text = reply_list(ticket)
+    reply_text = reply_list(ticket(command, message))
     await message.reply(**reply_text.as_kwargs())
     await bot.send_message(chat_id=admin_id, text=f"Новая заявка: \n{reply_text.as_html()}")
 

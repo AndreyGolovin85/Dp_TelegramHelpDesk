@@ -31,6 +31,14 @@ def cmd_tickets_new(command_args):
             return reply_list(item)
 
 
+def ticket(command, message):
+    user_id = message.chat.id
+    title = f"{message.from_user.full_name}'s issue"
+    description = command.args
+    ticket = tickets_write(description, title, user_id)
+    return ticket
+
+
 def cmd_tickets_none():
     for item in tickets:
         return reply_list(item)
