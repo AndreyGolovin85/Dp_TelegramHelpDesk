@@ -34,6 +34,7 @@ async def send_message_users(callback: types.CallbackQuery):
     ticket_dict.update([("status", "in_work")])
     await bot.send_message(chat_id=ticket_dict["user_id"],
                            text=f"Ваша заявка: \n{reply_list(ticket_dict).as_html()}\nпринята в работу!")
+    # Требуется переделать.
     await callback.message.answer("Заявка принята в работу!",
                                   reply_markup=get_keyboard("Закрыть заявку", f"accept_ticket:{index_ticket}"))
     await callback.answer()
