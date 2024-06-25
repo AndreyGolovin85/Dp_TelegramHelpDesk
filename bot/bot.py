@@ -5,9 +5,12 @@ import logging
 from aiogram.enums import ParseMode
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from dotenv import load_dotenv
-from aiogram import Bot, Dispatcher, types, F
+from aiogram import Bot, Dispatcher, types
 from aiogram.filters.command import Command, CommandObject
-from aiogram.utils.formatting import as_list
+
+
+from utils import reply_list, cmd_tickets_new, cmd_tickets_none, cmd_tickets_not_admin, ticket, get_index_ticket, \
+    get_ticket_dict
 
 logging.basicConfig(level=logging.INFO)
 
@@ -17,19 +20,29 @@ bot = Bot(token=os.getenv("API_TOKEN"))
 admin_id = int(os.getenv("ADMIN_ID"))
 dispatcher = Dispatcher()
 
-tickets = [{"user_id": 0, "title": "Тестовое название", "description": "Тестовое описание", "status": "test"}]
+
+def get_keyboard(text, call_data):
+    builder = InlineKeyboardBuilder()
+    builder.add(types.InlineKeyboardButton(text=text, callback_data=call_data))
+    return builder.as_markup()
 
 
-def reply_list(item=None):
-    """<class 'aiogram.utils.formatting.Text'>"""
-    if item is None:
-        item = tickets[-1]
-    return as_list(
-        f"User ID: {item['user_id']}",
-        f"Title: {item['title']}",
-        f"Description: {item['description']}",
-        f"Status: {item['status']}",
-        sep='\n')
+@dispatcher.callback_query(lambda call: call.data.startswith("accept_ticket:"))
+async def send_message_users(callback: types.CallbackQuery):
+    index_ticket = callback.data.split(":")[1]
+    ticket_dict = get_ticket_dict(index_ticket)
+    ticket_dict.update([("status", "in_work")])
+    await bot.send_message(chat_id=ticket_dict["user_id"],
+                           text=f"Ваша заявка: \n{reply_list(ticket_dict).as_html()}\nпринята в работу!")
+    await callback.message.answer("Заявка принята в работу!",
+                                  reply_markup=get_keyboard("Закрыть заявку", f"accept_ticket:{index_ticket}"))
+    await callback.answer()
+
+
+async def admin_to_accept_button(reply_text, ticket_dict):
+    index_ticket = get_index_ticket(ticket_dict)
+    await bot.send_message(chat_id=admin_id, text=f"Новая заявка: \n{reply_text.as_html()}",
+                           reply_markup=get_keyboard("Принять заявку", f"accept_ticket:{index_ticket}"))
 
 
 @dispatcher.message(Command("start"))
@@ -62,29 +75,6 @@ async def cmd_tickets(message: types.Message, command: CommandObject):
         return
 
 
-def get_keyboard(text, call_data):
-    builder = InlineKeyboardBuilder()
-    builder.add(types.InlineKeyboardButton(text=text, callback_data=call_data))
-    return builder.as_markup()
-
-
-@dispatcher.callback_query(lambda call: call.data.startswith("accept_ticket:"))
-async def send_message_users(callback: types.CallbackQuery):
-    index_ticket = callback.data.split(":")[1]
-    ticket = tickets[int(index_ticket)]
-    ticket.update([("status", "in_work")])
-    await bot.send_message(chat_id=ticket["user_id"], text=f"Ваша заявка: \n{reply_list(ticket).as_html()}"
-                                                           f"\nпринята в работу.")
-    await callback.message.answer("Заявка принята.")
-    await callback.answer()
-
-
-async def admin_to_accept_button(reply_text, ticket):
-    id_ = tickets.index(ticket)
-    await bot.send_message(chat_id=admin_id, text=f"Новая заявка: \n{reply_text.as_html()}",
-                           reply_markup=get_keyboard("Принять заявку", f"accept_ticket:{id_}"))
-
-
 @dispatcher.message(Command("new_ticket"))
 async def cmd_add_ticket(message: types.Message, command: CommandObject):
     if command.args is None:
@@ -92,14 +82,9 @@ async def cmd_add_ticket(message: types.Message, command: CommandObject):
                             parse_mode=ParseMode.MARKDOWN)
         return
 
-    ticket = {
-        "user_id": message.chat.id,
-        "title": f"{message.from_user.full_name}'s issue",
-        "description": command.args,
-        "status": "new"}
-    tickets.append(ticket)
-    reply_text = reply_list(ticket)
-    await admin_to_accept_button(reply_text, ticket)
+    ticket_dict = ticket(message, command)
+    reply_text = reply_list(ticket_dict)
+    await admin_to_accept_button(reply_text, ticket_dict)
     await message.reply(**reply_text.as_kwargs())
 
 
