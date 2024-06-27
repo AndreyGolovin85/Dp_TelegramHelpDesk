@@ -5,13 +5,13 @@ tickets = [{"user_id": 0, "title": "Тестовое название", "descrip
 
 
 def tickets_write(description, title, user_id):
-    ticket = {
+    new_ticket = {
         "user_id": user_id,
         "title": title,
         "description": description,
         "status": "new"}
-    tickets.append(ticket)
-    return ticket
+    tickets.append(new_ticket)
+    return new_ticket
 
 
 def reply_list(item: dict = None) -> aiogram.utils.formatting.Text:
@@ -29,8 +29,8 @@ def ticket(message, command):
     user_id = message.chat.id
     title = f"{message.from_user.full_name}'s issue"
     description = command.args
-    ticket = tickets_write(description, title, user_id)
-    return ticket
+    new_ticket = tickets_write(description, title, user_id)
+    return new_ticket
 
 
 def cmd_tickets_new(command_args):
