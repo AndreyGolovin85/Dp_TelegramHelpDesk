@@ -24,6 +24,7 @@ Base.metadata.create_all(engine)
 Session = sessionmaker(autoflush=False, bind=engine)
 
 with Session(bind=engine) as session:
+    # Запись тикетов в БД
     async def add_ticket(ticket_dict: dict):
         new_ticket = Ticket(
             uid=ticket_dict["user_id"],
@@ -34,6 +35,7 @@ with Session(bind=engine) as session:
         session.add(new_ticket)
         session.commit()
 
+    # Редактирует статус тикетов в БД
     async def edit_ticket_status(ticket_dict: dict, new_status):
         list_ticket = select(Ticket).where(
             and_(
@@ -45,15 +47,15 @@ with Session(bind=engine) as session:
         ticket.status = new_status
         session.commit()
 
-
+    # Возвращает список словарей тикетов
     def list_tickets(uid=0, status: str = None) -> list[dict]:
-        if uid == 0:
-            if status is None:
-                select_tickets = select(Ticket)
-            else:
-                select_tickets = select(Ticket).where(Ticket.status == status)
-        else:
+        if uid != 0:
             select_tickets = select(Ticket).where(Ticket.uid == uid)
+        elif status is None:
+            select_tickets = select(Ticket)
+        else:
+            select_tickets = select(Ticket).where(Ticket.status == status)
+
         tickets_dict = []
         for ticket in session.query(select_tickets.subquery()).all():
             tickets_dict.append({
