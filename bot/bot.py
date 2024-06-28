@@ -9,7 +9,7 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.filters.command import Command, CommandObject
 
 from db import add_ticket, edit_ticket_status, list_tickets
-from utils import reply_list, ticket, get_index_ticket, get_ticket_dict
+from utils import reply_list, new_ticket, get_index_ticket, get_ticket_dict
 
 logging.basicConfig(level=logging.INFO)
 
@@ -52,10 +52,9 @@ async def cmd_start(message: types.Message):
 
 @dispatcher.message(Command("tickets"))
 async def cmd_tickets(message: types.Message, command: CommandObject):
-    command_args = command.args
     user_id = message.chat.id
     if user_id != admin_id:
-        if command_args is not None:
+        if command.args is not None:
             await message.answer("! Не пишите лишние аргументы !")
         user_tickets = list_tickets(user_id)
         if user_tickets is None:
@@ -64,13 +63,13 @@ async def cmd_tickets(message: types.Message, command: CommandObject):
             await message.answer(**reply_list(user_ticket).as_kwargs())
         return
 
-    if command_args == "new":
+    if command.args == "new":
         user_tickets = list_tickets(status="new")
         for user_ticket in user_tickets:
             await message.answer(**reply_list(user_ticket).as_kwargs())
         return
 
-    if command_args is None:
+    if command.args is None:
         user_tickets = list_tickets()
         for user_ticket in user_tickets:
             await message.answer(**reply_list(user_ticket).as_kwargs())
@@ -84,7 +83,7 @@ async def cmd_add_ticket(message: types.Message, command: CommandObject):
                             parse_mode=ParseMode.MARKDOWN)
         return
 
-    ticket_dict = ticket(message, command)
+    ticket_dict = new_ticket(command.args, f"{message.from_user.full_name}'s issue", message.chat.id)
     reply_text = reply_list(ticket_dict)
     await add_ticket(ticket_dict)
     await admin_to_accept_button(reply_text, ticket_dict)
