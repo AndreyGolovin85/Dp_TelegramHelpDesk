@@ -29,7 +29,6 @@ def get_keyboard(text, call_data):
 async def send_message_users(callback: types.CallbackQuery):
     index_ticket = callback.data.split(":")[1]
     ticket_dict = get_ticket_dict(index_ticket)
-    ticket_dict.update([("status", "in_work")])
     await edit_ticket_status(ticket_dict, "in_work")
     await bot.send_message(chat_id=ticket_dict["user_id"],
                            text=f"Ваша заявка: \n{reply_list(ticket_dict).as_html()}\nпринята в работу!")

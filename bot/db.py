@@ -50,11 +50,11 @@ with Session(bind=engine) as session:
     # Возвращает список словарей тикетов
     def list_tickets(uid=0, status: str | None = None) -> list[dict]:
         if uid != 0:
-            select_tickets = select(Ticket).where(Ticket.uid.uid == uid)
+            select_tickets = select(Ticket).where(uid == Ticket.uid)
         elif status is None:
             select_tickets = select(Ticket)
         else:
-            select_tickets = select(Ticket).where(Ticket.status.status == status)
+            select_tickets = select(Ticket).where(status == Ticket.status)
 
         tickets_dict = []
         for ticket in session.query(select_tickets.subquery()).all():
