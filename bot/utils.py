@@ -12,7 +12,7 @@ def new_ticket(description, title, user_id):
     return new
 
 
-def reply_list(item: dict = None) -> aiogram.utils.formatting.Text:
+def reply_list(item: dict | None = None) -> aiogram.utils.formatting.Text:
     if item is None:
         item = list_tickets()[-1]
     return as_list(

@@ -36,7 +36,7 @@ with Session(bind=engine) as session:
         session.commit()
 
     # Редактирует статус тикетов в БД
-    async def edit_ticket_status(ticket_dict: dict, new_status):
+    async def edit_ticket_status(ticket_dict: dict, new_status: str):
         list_ticket = select(Ticket).where(
             and_(
                 Ticket.uid == ticket_dict["user_id"],
@@ -48,7 +48,7 @@ with Session(bind=engine) as session:
         session.commit()
 
     # Возвращает список словарей тикетов
-    def list_tickets(uid=0, status: str = None) -> list[dict]:
+    def list_tickets(uid=0, status: str | None = None) -> list[dict]:
         if uid != 0:
             select_tickets = select(Ticket).where(Ticket.uid.uid == uid)
         elif status is None:
