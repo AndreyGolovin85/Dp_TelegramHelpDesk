@@ -56,7 +56,7 @@ async def cmd_tickets(message: types.Message, command: CommandObject):
         if command.args is not None:
             await message.answer("! Не пишите лишние аргументы !")
         user_tickets = list_tickets(user_id)
-        if user_tickets is None:
+        if not user_tickets:
             await message.answer("Вы ещё не создали ни одного тикета.")
         for user_ticket in user_tickets:
             await message.answer(**reply_list(user_ticket).as_kwargs())
