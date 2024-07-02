@@ -7,6 +7,11 @@ class Base(DeclarativeBase):
     pass
 
 
+engine = create_engine("sqlite:///bot.db", echo=True)
+Base.metadata.create_all(engine)
+Session = sessionmaker(autoflush=False, bind=engine)
+
+
 class Ticket(Base, sessionmaker):
     __tablename__ = "tickets"
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -64,8 +69,3 @@ class Ticket(Base, sessionmaker):
             )
             session.add(new_ticket)
             session.commit()
-
-
-engine = create_engine("sqlite:///bot.db", echo=True)
-Base.metadata.create_all(engine)
-Session = sessionmaker(autoflush=False, bind=engine)
