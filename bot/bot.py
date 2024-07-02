@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters.command import Command, CommandObject
 
-from db import add_ticket, edit_ticket_status, list_tickets
+from db import Ticket
 from utils import reply_list, new_ticket, get_index_ticket, get_ticket_dict
 
 logging.basicConfig(level=logging.INFO)
@@ -29,7 +29,7 @@ def get_keyboard(text, call_data):
 async def send_message_users(callback: types.CallbackQuery):
     index_ticket = callback.data.split(":")[1]
     ticket_dict = get_ticket_dict(index_ticket)
-    await edit_ticket_status(ticket_dict, "in_work")
+    await Ticket.edit_ticket_status(ticket_dict, "in_work")
     await bot.send_message(chat_id=ticket_dict["user_id"],
                            text=f"Ваша заявка: \n{reply_list(ticket_dict).as_html()}\nпринята в работу!")
     # Требуется переделать.
@@ -55,7 +55,7 @@ async def cmd_tickets(message: types.Message, command: CommandObject):
     if user_id != admin_id:
         if command.args is not None:
             await message.answer("! Не пишите лишние аргументы !")
-        user_tickets = list_tickets(user_id)
+        user_tickets = Ticket.list_tickets(user_id)
         if not user_tickets:
             await message.answer("Вы ещё не создали ни одного тикета.")
         for user_ticket in user_tickets:
@@ -63,13 +63,13 @@ async def cmd_tickets(message: types.Message, command: CommandObject):
         return
 
     if command.args == "new":
-        user_tickets = list_tickets(status="new")
+        user_tickets = Ticket.list_tickets(status="new")
         for user_ticket in user_tickets:
             await message.answer(**reply_list(user_ticket).as_kwargs())
         return
 
     if command.args is None:
-        user_tickets = list_tickets()
+        user_tickets = Ticket.list_tickets()
         for user_ticket in user_tickets:
             await message.answer(**reply_list(user_ticket).as_kwargs())
         return
@@ -84,7 +84,7 @@ async def cmd_add_ticket(message: types.Message, command: CommandObject):
 
     ticket_dict = new_ticket(command.args, f"{message.from_user.full_name}'s issue", message.chat.id)
     reply_text = reply_list(ticket_dict)
-    await add_ticket(ticket_dict)
+    await Ticket.add_ticket(ticket_dict)
     await admin_to_accept_button(reply_text, ticket_dict)
     await message.reply(**reply_text.as_kwargs())
 

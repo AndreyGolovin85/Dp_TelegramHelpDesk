@@ -1,6 +1,6 @@
 import aiogram
 from aiogram.utils.formatting import as_list
-from db import list_tickets
+from db import Ticket
 
 
 def new_ticket(description, title, user_id):
@@ -14,7 +14,7 @@ def new_ticket(description, title, user_id):
 
 def reply_list(item: dict | None = None) -> aiogram.utils.formatting.Text:
     if item is None:
-        item = list_tickets()[-1]
+        item = Ticket.list_tickets()[-1]
     return as_list(
         f"User ID: {item['user_id']}",
         f"Title: {item['title']}",
@@ -24,10 +24,10 @@ def reply_list(item: dict | None = None) -> aiogram.utils.formatting.Text:
 
 
 def get_index_ticket(ticket_dict: dict) -> int:
-    ticket_index = list_tickets().index(ticket_dict)
+    ticket_index = Ticket.list_tickets().index(ticket_dict)
     return ticket_index
 
 
 def get_ticket_dict(index_ticket: str) -> dict:
-    ticket_dict = list_tickets()[int(index_ticket)]
+    ticket_dict = Ticket.list_tickets()[int(index_ticket)]
     return ticket_dict
