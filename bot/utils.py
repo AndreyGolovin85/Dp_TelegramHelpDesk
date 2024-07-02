@@ -16,10 +16,10 @@ def reply_list(item: dict | None = None) -> aiogram.utils.formatting.Text:
     if item is None:
         item = Ticket.list_tickets()[-1]
     return as_list(
-        f"User ID: {item['user_id']}",
-        f"Title: {item['title']}",
-        f"Description: {item['description']}",
-        f"Status: {item['status']}",
+        f"ID пользователя: {item['user_id']}",
+        f"Заголовок: {item['title']}",
+        f"Описание: {item['description']}",
+        f"Статус: {item['status']}",
         sep='\n')
 
 

@@ -31,7 +31,7 @@ async def send_message_users(callback: types.CallbackQuery):
     ticket_dict = get_ticket_dict(index_ticket)
     await Ticket.edit_ticket_status(ticket_dict, "in_work")
     await bot.send_message(chat_id=ticket_dict["user_id"],
-                           text=f"Ваша заявка: \n{reply_list(ticket_dict).as_html()}\nпринята в работу!")
+                           text=f"Ваша заявка: \n{ticket_dict['title']} \nОписание: {ticket_dict['description']}\nпринята в работу!")
     # Требуется переделать.
     await callback.message.answer("Заявка принята в работу!",
                                   reply_markup=get_keyboard("Закрыть заявку", f"accept_ticket:{index_ticket}"))
@@ -82,8 +82,7 @@ async def cmd_add_ticket(message: types.Message, command: CommandObject):
                             parse_mode=ParseMode.MARKDOWN)
         return
 
-     
-    ticket_dict = new_ticket(command.args, f"{message.from_user.full_name}'s issue", message.chat.id)
+    ticket_dict = new_ticket(command.args, f"Запрос от {message.from_user.full_name}", message.chat.id)
     reply_text = reply_list(ticket_dict)
     await Ticket.add_ticket(ticket_dict)
     await admin_to_accept_button(reply_text, ticket_dict)
