@@ -19,8 +19,8 @@ class Ticket(Base):
         return f"User(user_id={self.uid} title={self.title!r}, description={self.description!r}, status = {self.status})"
 
     # Возвращает список словарей тикетов
-    @staticmethod
-    def list_tickets(uid=0, status: str | None = None) -> list[dict]:
+    @classmethod
+    def list_tickets(cls, uid=0, status: str | None = None) -> list[dict]:
         if uid != 0:
             select_tickets = select(Ticket).where(uid == Ticket.uid)
         elif status is None:
@@ -38,8 +38,8 @@ class Ticket(Base):
         return tickets_dict
 
     # Редактирует статус тикетов в БД
-    @staticmethod
-    async def edit_ticket_status(ticket_dict: dict, new_status: str):
+    @classmethod
+    async def edit_ticket_status(cls, ticket_dict: dict, new_status: str):
         list_ticket = select(Ticket).where(
             and_(
                 Ticket.uid == ticket_dict["user_id"],
@@ -51,8 +51,8 @@ class Ticket(Base):
         session.commit()
 
     # Запись тикетов в БД
-    @staticmethod
-    async def add_ticket(ticket_dict: dict):
+    @classmethod
+    async def add_ticket(cls, ticket_dict: dict):
         new_ticket = Ticket(
             uid=ticket_dict["user_id"],
             title=ticket_dict["title"],
