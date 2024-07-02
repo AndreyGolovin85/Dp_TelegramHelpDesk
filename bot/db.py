@@ -21,6 +21,7 @@ class Ticket(Base, sessionmaker):
     # Возвращает список словарей тикетов
     @classmethod
     def list_tickets(cls, uid=0, status: str | None = None) -> list[dict]:
+        tickets_dict = []
         with Session() as session:
             if uid != 0:
                 select_tickets = select(Ticket).where(uid == Ticket.uid)
@@ -29,14 +30,13 @@ class Ticket(Base, sessionmaker):
             else:
                 select_tickets = select(Ticket).where(status == Ticket.status)
 
-            tickets_dict = []
             for ticket in session.query(select_tickets.subquery()).all():
                 tickets_dict.append({
                     "user_id": ticket.uid,
                     "title": ticket.title,
                     "description": ticket.description,
                     "status": ticket.status})
-            return tickets_dict
+        return tickets_dict
 
     # Редактирует статус тикетов в БД
     @classmethod
