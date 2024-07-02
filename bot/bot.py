@@ -51,11 +51,10 @@ async def cmd_start(message: types.Message):
 
 @dispatcher.message(Command("tickets"))
 async def cmd_tickets(message: types.Message, command: CommandObject):
-    user_id = message.chat.id
-    if user_id != admin_id:
+    if message.chat.id != admin_id:
         if command.args is not None:
             await message.answer("! Не пишите лишние аргументы !")
-        user_tickets = Ticket.list_tickets(user_id)
+        user_tickets = Ticket.list_tickets(uid=message.chat.id)
         if not user_tickets:
             await message.answer("Вы ещё не создали ни одного тикета.")
         for user_ticket in user_tickets:
