@@ -33,12 +33,12 @@ class User(Base):
             )
             session.add(new_user)
             session.commit()
+            return new_user
 
 
 class Ticket(Base, sessionmaker):
     __tablename__ = "tickets"
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    #uid: Mapped[int] = mapped_column(Integer)
     title: Mapped[str] = mapped_column(String(30))
     description: Mapped[str] = mapped_column(Text)
     status: Mapped[str] = mapped_column(String['new', 'in_work', 'completed', 'rejected'])
@@ -94,7 +94,9 @@ class Ticket(Base, sessionmaker):
                 status=ticket_dict["status"]
             )
             session.add(new_ticket)
+            session.flush()
             session.commit()
+            return new_ticket
 
 
 engine = create_engine("sqlite:///bot.db", echo=True)
