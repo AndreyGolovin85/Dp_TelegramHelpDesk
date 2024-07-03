@@ -90,7 +90,6 @@ async def cmd_add_ticket(message: types.Message, command: CommandObject):
     reply_text = reply_list(ticket_dict)
     await Ticket.add_ticket(ticket_dict)
     await admin_to_accept_button(reply_text, ticket_dict)
-    await message.reply(**reply_text.as_kwargs())
     if message.chat.id != admin_id:
         await message.reply(**reply_text.as_kwargs())
 
