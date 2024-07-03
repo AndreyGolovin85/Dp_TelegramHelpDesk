@@ -91,7 +91,8 @@ async def cmd_add_ticket(message: types.Message, command: CommandObject):
     await Ticket.add_ticket(ticket_dict)
     await admin_to_accept_button(reply_text, ticket_dict)
     await message.reply(**reply_text.as_kwargs())
-    await bot.send_message(chat_id=admin_id, text=f"Новая заявка: \n{reply_text.as_html()}")
+    if message.chat.id != admin_id:
+        await bot.send_message(chat_id=admin_id, text=f"Новая заявка: \n{reply_text.as_html()}")
 
 
 @dispatcher.message(Command("check_admin"))
