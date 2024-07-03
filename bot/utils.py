@@ -12,6 +12,14 @@ def new_ticket(description, title, user_id):
     return new
 
 
+def new_user(user_uid, first_name, last_name):
+    new = {
+        "user_uid": user_uid,
+        "first_name": first_name,
+        "last_name": last_name}
+    return new
+
+
 def reply_list(item: dict | None = None) -> aiogram.utils.formatting.Text:
     if item is None:
         item = Ticket.list_tickets()[-1]
