@@ -1,19 +1,12 @@
-from typing import TypedDict
-
 from sqlalchemy import Integer, String, Text, create_engine, select, and_, ForeignKey
 from sqlalchemy.orm import DeclarativeBase, sessionmaker, relationship
 from sqlalchemy.orm import Mapped, mapped_column
-from typing import TypedDict
+
+from bot.datacasses import UserDict
 
 
 class Base(DeclarativeBase):
     pass
-
-
-class UserDict(TypedDict):
-    user_uid: int
-    first_name: str
-    last_name: str
 
 
 class User(Base):
@@ -43,6 +36,11 @@ class User(Base):
             session.add(new_user)
             session.commit()
             return new_user
+
+    @classmethod
+    def get_user_by_uid(cls, user_uid: int):
+        with Session() as session:
+            return session.query(User).filter_by(user_uid=user_uid).first()
 
 
 class Ticket(Base, sessionmaker):

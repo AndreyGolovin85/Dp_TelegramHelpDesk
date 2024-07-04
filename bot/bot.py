@@ -50,8 +50,13 @@ async def cmd_start(message: types.Message):
     first_name = message.chat.first_name
     last_name = message.chat.last_name
     user_dict = new_user(user_uid, first_name, last_name)
-    User.add_user(user_dict)
-    await message.answer("Hello!")
+    user = User.get_user_by_uid(user_uid)
+    if not user:
+        User.add_user(user_dict)
+        answer = "Вы успешно зарегистрировались!"
+    else:
+        answer = "Вы уже зарегистрированы!"
+    await message.answer(f"{first_name}, добро пожаловать в бот! {answer}")
 
 
 @dispatcher.message(Command("tickets"))
