@@ -1,7 +1,6 @@
 import aiogram
 from aiogram.utils.formatting import as_list
-from db import Ticket
-from db import User
+from db import Ticket, User
 
 
 def answer_start(message):
