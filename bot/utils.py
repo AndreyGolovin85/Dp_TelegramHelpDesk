@@ -1,6 +1,21 @@
 import aiogram
 from aiogram.utils.formatting import as_list
 from db import Ticket
+from db import User
+
+
+def answer_start(message):
+    user_uid = message.chat.id
+    first_name = message.chat.first_name
+    last_name = message.chat.last_name
+    user_dict = new_user(user_uid, first_name, last_name)
+    user = User.get_user_by_uid(user_uid)
+    if not user:
+        User.add_user(user_dict)
+        answer = "Вы успешно зарегистрировались!"
+    else:
+        answer = "Вы уже зарегистрированы!"
+    return f"{first_name}, добро пожаловать в бот! {answer}"
 
 
 def new_ticket(description, title, user_id):

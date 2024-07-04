@@ -2,7 +2,7 @@ from sqlalchemy import Integer, String, Text, create_engine, select, and_, Forei
 from sqlalchemy.orm import DeclarativeBase, sessionmaker, relationship
 from sqlalchemy.orm import Mapped, mapped_column
 
-from bot.datacasses import UserDict
+from datacasses import UserDict
 
 
 class Base(DeclarativeBase):

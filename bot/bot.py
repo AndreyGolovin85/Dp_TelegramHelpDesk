@@ -8,8 +8,8 @@ from dotenv import load_dotenv
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters.command import Command, CommandObject
 
-from db import Ticket, User
-from utils import reply_list, new_ticket, get_index_ticket, get_ticket_dict, new_user
+from db import Ticket
+from utils import reply_list, new_ticket, get_index_ticket, get_ticket_dict, new_user, answer_start
 
 logging.basicConfig(level=logging.INFO)
 
@@ -46,17 +46,7 @@ async def admin_to_accept_button(reply_text, ticket_dict):
 
 @dispatcher.message(Command("start"))
 async def cmd_start(message: types.Message):
-    user_uid = message.chat.id
-    first_name = message.chat.first_name
-    last_name = message.chat.last_name
-    user_dict = new_user(user_uid, first_name, last_name)
-    user = User.get_user_by_uid(user_uid)
-    if not user:
-        User.add_user(user_dict)
-        answer = "Вы успешно зарегистрировались!"
-    else:
-        answer = "Вы уже зарегистрированы!"
-    await message.answer(f"{first_name}, добро пожаловать в бот! {answer}")
+    await message.answer(answer_start(message))
 
 
 @dispatcher.message(Command("tickets"))
