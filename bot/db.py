@@ -1,10 +1,19 @@
+from typing import TypedDict
+
 from sqlalchemy import Integer, String, Text, create_engine, select, and_, ForeignKey
 from sqlalchemy.orm import DeclarativeBase, sessionmaker, relationship
 from sqlalchemy.orm import Mapped, mapped_column
+from typing import TypedDict
 
 
 class Base(DeclarativeBase):
     pass
+
+
+class UserDict(TypedDict):
+    user_uid: int
+    first_name: str
+    last_name: str
 
 
 class User(Base):
@@ -24,7 +33,7 @@ class User(Base):
                f"department={self.department!s}, is_priority={self.is_priority!s})"
 
     @classmethod
-    async def add_user(cls, user_dict: dict):
+    def add_user(cls, user_dict: UserDict):
         with Session() as session:
             new_user = User(
                 user_uid=user_dict["user_uid"],
@@ -94,7 +103,6 @@ class Ticket(Base, sessionmaker):
                 status=ticket_dict["status"]
             )
             session.add(new_ticket)
-            session.flush()
             session.commit()
             return new_ticket
 

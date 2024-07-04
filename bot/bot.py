@@ -50,7 +50,7 @@ async def cmd_start(message: types.Message):
     first_name = message.chat.first_name
     last_name = message.chat.last_name
     user_dict = new_user(user_uid, first_name, last_name)
-    await User.add_user(user_dict)
+    User.add_user(user_dict)
     await message.answer("Hello!")
 
 
