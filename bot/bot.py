@@ -9,7 +9,8 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.filters.command import Command, CommandObject
 
 from db import Ticket
-from utils import reply_list, new_ticket, get_index_ticket, get_ticket_dict, new_user, answer_start
+from utils import reply_list, new_ticket, get_index_ticket, get_ticket_dict, new_user, answer_start, \
+    check_user_registration
 
 logging.basicConfig(level=logging.INFO)
 
@@ -81,12 +82,16 @@ async def cmd_add_ticket(message: types.Message, command: CommandObject):
                             parse_mode=ParseMode.MARKDOWN)
         return
 
-    ticket_dict = new_ticket(command.args, f"Запрос от {message.from_user.full_name}", message.chat.id)
-    reply_text = reply_list(ticket_dict)
-    await Ticket.add_ticket(ticket_dict)
-    await admin_to_accept_button(reply_text, ticket_dict)
-    if message.chat.id != admin_id:
-        await message.reply(**reply_text.as_kwargs())
+    user = check_user_registration(message.chat.id)
+    if not user:
+        await message.answer("Вы не зарегистрированы в боте, введите команду /start.")
+    else:
+        ticket_dict = new_ticket(command.args, f"Запрос от {message.from_user.full_name}", message.chat.id)
+        reply_text = reply_list(ticket_dict)
+        await Ticket.add_ticket(ticket_dict)
+        await admin_to_accept_button(reply_text, ticket_dict)
+        if message.chat.id != admin_id:
+            await message.reply(**reply_text.as_kwargs())
 
 
 @dispatcher.message(Command("check_admin"))

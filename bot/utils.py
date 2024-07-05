@@ -8,13 +8,18 @@ def answer_start(message):
     first_name = message.chat.first_name
     last_name = message.chat.last_name
     user_dict = new_user(user_uid, first_name, last_name)
-    user = User.get_user_by_uid(user_uid)
+    user = check_user_registration(user_uid)
     if not user:
         User.add_user(user_dict)
         answer = "Вы успешно зарегистрировались!"
     else:
         answer = "Вы уже зарегистрированы!"
     return f"{first_name}, добро пожаловать в бот! {answer}"
+
+
+def check_user_registration(user_uid):
+    user = User.get_user_by_uid(user_uid)
+    return user
 
 
 def new_ticket(description, title, user_id):
