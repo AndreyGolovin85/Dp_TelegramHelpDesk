@@ -23,10 +23,9 @@ def check_user_registration(user_uid):
     user = User.get_user_by_uid(user_uid)
     return user
 
-# TicketDict(user_id='новая заявка', title='Запрос от Андрей Головин', description=744091510, status='new')
+
 def new_ticket(description: str, title: str, user_id: int) -> TicketDict:
     new = TicketDict(user_id, title, description)
-    print(11111111111111, new)
     return new
 
 
@@ -44,7 +43,6 @@ def reply_list(item: TicketDict | None = None) -> aiogram.utils.formatting.Text:
         f"Описание: {item.description}",
         f"Статус: {item.status}",
         sep='\n')
-
 
 # def get_index_ticket(ticket_dict: dict) -> int:
 #     ticket_index = Ticket.list_tickets().index(ticket_dict)

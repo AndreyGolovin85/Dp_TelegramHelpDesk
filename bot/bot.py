@@ -10,9 +10,7 @@ from aiogram.filters.command import Command, CommandObject
 
 from db import Ticket
 from utils import reply_list, new_ticket, answer_start, check_user_registration
-# get_index_ticket, get_ticket_dict,
 
-logging.basicConfig(level=logging.INFO)
 
 load_dotenv()
 bot = Bot(token=os.getenv("API_TOKEN"))
@@ -108,6 +106,7 @@ async def main():
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
