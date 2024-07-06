@@ -9,8 +9,7 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.filters.command import Command, CommandObject
 
 from db import Ticket
-from utils import reply_list, new_ticket, get_index_ticket, get_ticket_dict, new_user, answer_start, \
-    check_user_registration
+from utils import reply_list, new_ticket, get_index_ticket, get_ticket_dict, answer_start, check_user_registration
 
 logging.basicConfig(level=logging.INFO)
 

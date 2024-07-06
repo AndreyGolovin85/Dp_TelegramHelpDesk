@@ -2,8 +2,6 @@ from sqlalchemy import Integer, String, Text, create_engine, select, and_, Forei
 from sqlalchemy.orm import DeclarativeBase, sessionmaker, relationship
 from sqlalchemy.orm import Mapped, mapped_column
 
-from datacasses import UserDict
-
 
 class Base(DeclarativeBase):
     pass
@@ -26,7 +24,7 @@ class User(Base):
                f"department={self.department!s}, is_priority={self.is_priority!s})"
 
     @classmethod
-    def add_user(cls, user_dict: UserDict):
+    def add_user(cls, user_dict):
         with Session() as session:
             new_user = User(
                 user_uid=user_dict["user_uid"],

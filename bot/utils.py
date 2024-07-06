@@ -1,5 +1,7 @@
 import aiogram
 from aiogram.utils.formatting import as_list
+
+from custom_types import UserDict
 from db import Ticket, User
 
 
@@ -31,7 +33,7 @@ def new_ticket(description, title, user_id):
     return new
 
 
-def new_user(user_uid, first_name, last_name):
+def new_user(user_uid, first_name, last_name) -> UserDict:
     new = {
         "user_uid": user_uid,
         "first_name": first_name,
