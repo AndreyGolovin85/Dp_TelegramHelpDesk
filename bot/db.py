@@ -58,9 +58,9 @@ class Ticket(Base, sessionmaker):
     def __repr__(self) -> str:
         return f"User(user_id={self.user_uid} title={self.title!r}, description={self.description!r}, status = {self.status})"
 
-    # Возвращает список словарей тикетов
     @classmethod
     def list_tickets(cls, uid=0, status: str | None = None) -> list[TicketDict]:
+        """Возвращает список словарей тикетов"""
         tickets_dict = []
         with Session() as session:
             if uid != 0:
@@ -75,9 +75,9 @@ class Ticket(Base, sessionmaker):
 
         return tickets_dict
 
-    # Редактирует статус тикетов в БД
     @classmethod
     async def edit_ticket_status(cls, ticket_dict: dict, new_status: str):
+        """Редактирует статус тикетов в БД"""
         with Session() as session:
             list_ticket = select(Ticket).where(
                 and_(
@@ -89,9 +89,9 @@ class Ticket(Base, sessionmaker):
             ticket.status = new_status
             session.commit()
 
-    # Запись тикетов в БД
     @classmethod
     async def add_ticket(cls, ticket_dict: TicketDict):
+        """Запись тикетов в БД"""
         with Session() as session:
             new_ticket = Ticket(
                 user_uid=ticket_dict.user_id,
