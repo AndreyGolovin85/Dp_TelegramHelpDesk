@@ -9,7 +9,8 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.filters.command import Command, CommandObject
 
 from db import Ticket
-from utils import reply_list, new_ticket, get_index_ticket, get_ticket_dict, answer_start, check_user_registration
+from utils import reply_list, new_ticket, answer_start, check_user_registration
+# get_index_ticket, get_ticket_dict,
 
 logging.basicConfig(level=logging.INFO)
 
@@ -39,9 +40,9 @@ async def send_message_users(callback: types.CallbackQuery):
 
 
 async def admin_to_accept_button(reply_text, ticket_dict):
-    index_ticket = get_index_ticket(ticket_dict)
+    #index_ticket = get_index_ticket(ticket_dict)
     await bot.send_message(chat_id=admin_id, text=f"Новая заявка: \n{reply_text.as_html()}",
-                           reply_markup=get_keyboard("Принять заявку", f"accept_ticket:{index_ticket}"))
+                           reply_markup=get_keyboard("Принять заявку", f"accept_ticket:{1}")) #index_ticket
 
 
 @dispatcher.message(Command("start"))

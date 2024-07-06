@@ -2,6 +2,8 @@ from sqlalchemy import Integer, String, Text, create_engine, select, and_, Forei
 from sqlalchemy.orm import DeclarativeBase, sessionmaker, relationship
 from sqlalchemy.orm import Mapped, mapped_column
 
+from custom_types import UserDict, TicketDict
+
 
 class Base(DeclarativeBase):
     pass
@@ -14,8 +16,8 @@ class User(Base):
     user_uid = mapped_column(Integer)
     first_name: Mapped[str] = mapped_column(String(30))
     last_name: Mapped[str] = mapped_column(String(30))
-    department: Mapped[str] = mapped_column(String(50), default='')
-    is_priority: Mapped[int] = mapped_column(Integer, default=0)
+    department: Mapped[str] = mapped_column(String(50))
+    is_priority: Mapped[int] = mapped_column(Integer)
 
     tickets: Mapped[list["Ticket"]] = relationship("Ticket", back_populates="user")
 
@@ -24,12 +26,14 @@ class User(Base):
                f"department={self.department!s}, is_priority={self.is_priority!s})"
 
     @classmethod
-    def add_user(cls, user_dict):
+    def add_user(cls, user_dict: UserDict):
         with Session() as session:
             new_user = User(
-                user_uid=user_dict["user_uid"],
-                first_name=user_dict["first_name"],
-                last_name=user_dict["last_name"]
+                user_uid=user_dict.user_uid,
+                first_name=user_dict.first_name,
+                last_name=user_dict.last_name,
+                department=user_dict.department,
+                is_priority=user_dict.is_priority
             )
             session.add(new_user)
             session.commit()
@@ -56,7 +60,7 @@ class Ticket(Base, sessionmaker):
 
     # Возвращает список словарей тикетов
     @classmethod
-    def list_tickets(cls, uid=0, status: str | None = None) -> list[dict]:
+    def list_tickets(cls, uid=0, status: str | None = None) -> list[TicketDict]:
         tickets_dict = []
         with Session() as session:
             if uid != 0:
@@ -67,11 +71,8 @@ class Ticket(Base, sessionmaker):
                 select_tickets = select(Ticket).where(status == Ticket.status)
 
             for ticket in session.query(select_tickets.subquery()).all():
-                tickets_dict.append({
-                    "user_id": ticket.user_uid,
-                    "title": ticket.title,
-                    "description": ticket.description,
-                    "status": ticket.status})
+                tickets_dict.append(TicketDict(ticket.user_uid, ticket.title, ticket.description, ticket.status))
+
         return tickets_dict
 
     # Редактирует статус тикетов в БД
@@ -90,13 +91,13 @@ class Ticket(Base, sessionmaker):
 
     # Запись тикетов в БД
     @classmethod
-    async def add_ticket(cls, ticket_dict: dict):
+    async def add_ticket(cls, ticket_dict: TicketDict):
         with Session() as session:
             new_ticket = Ticket(
-                user_uid=ticket_dict["user_id"],
-                title=ticket_dict["title"],
-                description=ticket_dict["description"],
-                status=ticket_dict["status"]
+                user_uid=ticket_dict.user_id,
+                title=ticket_dict.title,
+                description=ticket_dict.description,
+                status=ticket_dict.status
             )
             session.add(new_ticket)
             session.commit()
