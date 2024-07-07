@@ -1,6 +1,7 @@
-from sqlalchemy import Integer, String, Text, create_engine, select, and_, ForeignKey
+from sqlalchemy import Integer, String, Text, create_engine, select, ForeignKey, DateTime
 from sqlalchemy.orm import DeclarativeBase, sessionmaker, relationship
 from sqlalchemy.orm import Mapped, mapped_column
+from datetime import datetime
 
 from custom_types import UserDict, TicketDict
 
@@ -51,12 +52,15 @@ class Ticket(Base, sessionmaker):
     title: Mapped[str] = mapped_column(String(30))
     description: Mapped[str] = mapped_column(Text)
     status: Mapped[str] = mapped_column(String['new', 'in_work', 'completed', 'rejected'])
+    datess = mapped_column(DateTime, default=datetime.utcnow)
+    last_updated: Mapped[datetime] = mapped_column(DateTime, onupdate=datetime.utcnow)
 
     user_uid: Mapped[int] = mapped_column(Integer, ForeignKey("users.user_uid"))
     user: Mapped["User"] = relationship("User", back_populates="tickets")
 
     def __repr__(self) -> str:
-        return f"User(user_id={self.user_uid} title={self.title!r}, description={self.description!r}, status = {self.status})"
+        return f"User(user_id={self.user_uid} title={self.title!r}, description={self.description!r}," \
+               f"status = {self.status})"
 
     @classmethod
     def list_tickets(cls, uid=0, status: str | None = None) -> list[TicketDict]:
@@ -72,36 +76,55 @@ class Ticket(Base, sessionmaker):
 
             for ticket in session.query(select_tickets.subquery()).all():
                 tickets_dict.append(TicketDict(ticket.user_uid, ticket.title, ticket.description, ticket.status))
-
         return tickets_dict
 
     @classmethod
-    async def edit_ticket_status(cls, ticket_dict: dict, new_status: str):
-        """Редактирует статус тикетов в БД"""
+    def get_ticket_by_id(cls, ticket_id: int):
+        """Получает тикет из базы данных по его id."""
         with Session() as session:
-            list_ticket = select(Ticket).where(
-                and_(
-                    Ticket.user_uid == ticket_dict["user_id"],
-                    Ticket.title == ticket_dict["title"],
-                    Ticket.description == ticket_dict["description"],
-                    Ticket.status == ticket_dict["status"]))
-            ticket = session.scalars(list_ticket).first()
-            ticket.status = new_status
-            session.commit()
+            ticket = session.query(Ticket).filter_by(id=ticket_id).one_or_none()
+            if not ticket:
+                raise ValueError(f"Тикет с id {ticket_id} не найден!")
+            return ticket
+
+    @classmethod
+    async def edit_ticket_status(cls, ticket_id: int, new_status: str):
+        """Редактирует статус тикета в БД по его ID"""
+        with Session() as session:
+            ticket = session.query(Ticket).filter_by(id=ticket_id).first()
+            if ticket:
+                ticket.status = new_status
+                ticket.last_updated = datetime.utcnow()
+                session.commit()
+
+    # @classmethod
+    # async def edit_ticket_status(cls, ticket: TicketDict, new_status: str):
+    #     """Редактирует статус тикетов в БД"""
+    #     with Session() as session:
+    #         list_ticket = select(Ticket).where(
+    #             and_(
+    #                 Ticket.user_uid == ticket.user_uid,
+    #                 Ticket.title == ticket.title,
+    #                 Ticket.description == ticket.description,
+    #                 Ticket.status == ticket.status))
+    #         ticket_session = session.scalars(list_ticket).first()
+    #         ticket_session.status = new_status
+    #         session.commit()
 
     @classmethod
     async def add_ticket(cls, ticket_dict: TicketDict):
         """Запись тикетов в БД"""
         with Session() as session:
             new_ticket = Ticket(
-                user_uid=ticket_dict.user_id,
+                user_uid=ticket_dict.user_uid,
                 title=ticket_dict.title,
                 description=ticket_dict.description,
+                last_updated=datetime.utcnow(),
                 status=ticket_dict.status
             )
             session.add(new_ticket)
             session.commit()
-            return new_ticket
+            return new_ticket.id
 
 
 engine = create_engine("sqlite:///bot.db", echo=True)

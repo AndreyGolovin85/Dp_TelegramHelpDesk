@@ -12,7 +12,7 @@ class UserDict:
 
 @dataclass
 class TicketDict:
-    user_id: int
+    user_uid: int
     title: str
     description: str
     status: str = "new"
