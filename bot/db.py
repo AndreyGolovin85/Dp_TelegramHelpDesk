@@ -52,7 +52,7 @@ class Ticket(Base, sessionmaker):
     title: Mapped[str] = mapped_column(String(30))
     description: Mapped[str] = mapped_column(Text)
     status: Mapped[str] = mapped_column(String['new', 'in_work', 'completed', 'rejected'])
-    datess = mapped_column(DateTime, default=datetime.utcnow)
+    dates_created = mapped_column(DateTime, default=datetime.utcnow)
     last_updated: Mapped[datetime] = mapped_column(DateTime, onupdate=datetime.utcnow)
 
     user_uid: Mapped[int] = mapped_column(Integer, ForeignKey("users.user_uid"))
