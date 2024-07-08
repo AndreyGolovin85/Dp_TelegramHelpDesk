@@ -133,6 +133,7 @@ async def cmd_cancel_ticket(message: types.Message, command: CommandObject):
                 inactive += 1
         if not tickets or inactive == len(tickets):
             await message.answer("У вас нет активных тикетов.")
+            return
         await message.answer(string_ticket)
         return
     if not Ticket.list_tickets(uid=message.chat.id):
