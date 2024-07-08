@@ -1,7 +1,7 @@
 import aiogram
 from aiogram.utils.formatting import as_list
 
-from custom_types import UserDict
+from custom_types import UserDict, TicketDict
 from db import Ticket, User
 
 
@@ -24,39 +24,22 @@ def check_user_registration(user_uid):
     return user
 
 
-def new_ticket(description, title, user_id):
-    new = {
-        "user_id": user_id,
-        "title": title,
-        "description": description,
-        "status": "new"}
+def new_ticket(description: str, title: str, user_id: int) -> TicketDict:
+    new = TicketDict(user_id, title, description)
     return new
 
 
-def new_user(user_uid, first_name, last_name) -> UserDict:
-    new = {
-        "user_uid": user_uid,
-        "first_name": first_name,
-        "last_name": last_name}
-    return new
+def new_user(user_uid: int, first_name: str, last_name: str) -> UserDict:
+    user = UserDict(user_uid, first_name, last_name)
+    return user
 
 
-def reply_list(item: dict | None = None) -> aiogram.utils.formatting.Text:
+def reply_list(item: TicketDict | None = None) -> aiogram.utils.formatting.Text:
     if item is None:
         item = Ticket.list_tickets()[-1]
     return as_list(
-        f"ID пользователя: {item['user_id']}",
-        f"Заголовок: {item['title']}",
-        f"Описание: {item['description']}",
-        f"Статус: {item['status']}",
+        f"ID пользователя: {item.user_uid}",
+        f"Заголовок: {item.title}",
+        f"Описание: {item.description}",
+        f"Статус: {item.status}",
         sep='\n')
-
-
-def get_index_ticket(ticket_dict: dict) -> int:
-    ticket_index = Ticket.list_tickets().index(ticket_dict)
-    return ticket_index
-
-
-def get_ticket_dict(index_ticket: str) -> dict:
-    ticket_dict = Ticket.list_tickets()[int(index_ticket)]
-    return ticket_dict

@@ -9,9 +9,7 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.filters.command import Command, CommandObject
 
 from db import Ticket
-from utils import reply_list, new_ticket, get_index_ticket, get_ticket_dict, answer_start, check_user_registration
-
-logging.basicConfig(level=logging.INFO)
+from utils import reply_list, new_ticket, answer_start, check_user_registration
 
 load_dotenv()
 bot = Bot(token=os.getenv("API_TOKEN"))
@@ -25,23 +23,33 @@ def get_keyboard(text, call_data):
     return builder.as_markup()
 
 
-@dispatcher.callback_query(lambda call: call.data.startswith("accept_ticket:"))
+@dispatcher.callback_query(lambda call: call.data.startswith("ticket_"))
 async def send_message_users(callback: types.CallbackQuery):
-    index_ticket = callback.data.split(":")[1]
-    ticket_dict = get_ticket_dict(index_ticket)
-    await Ticket.edit_ticket_status(ticket_dict, "in_work")
-    await bot.send_message(chat_id=ticket_dict["user_id"],
-                           text=f"Ваша заявка: \n{ticket_dict['title']} \nОписание: {ticket_dict['description']}\nпринята в работу!")
-    # Требуется переделать.
-    await callback.message.answer("Заявка принята в работу!",
-                                  reply_markup=get_keyboard("Закрыть заявку", f"accept_ticket:{index_ticket}"))
+    status = callback.data.split("_")[1]
+    ticket_id = callback.data.split("_")[2]
+    ticket = Ticket.get_ticket_by_id(int(ticket_id))
+    if status == "accept":
+        await Ticket.edit_ticket_status(ticket.id, "in_work")
+        await bot.send_message(chat_id=ticket.user_uid,
+                               text=f"Ваша заявка: {ticket.id} \nОписание: {ticket.description}\nпринята в работу!")
+        await admin_to_completed_button(ticket_id)
+    elif status == "completed":
+        await Ticket.edit_ticket_status(ticket.id, status)
+        await bot.send_message(chat_id=ticket.user_uid,
+                               text=f"Ваша заявка: {ticket.id} \nОписание: {ticket.description}\nвыполнена!")
+
     await callback.answer()
 
 
-async def admin_to_accept_button(reply_text, ticket_dict):
-    index_ticket = get_index_ticket(ticket_dict)
-    await bot.send_message(chat_id=admin_id, text=f"Новая заявка: \n{reply_text.as_html()}",
-                           reply_markup=get_keyboard("Принять заявку", f"accept_ticket:{index_ticket}"))
+async def admin_to_completed_button(ticket_id):
+    await bot.send_message(chat_id=admin_id, text=f"Заявка {ticket_id} принята в работу!",
+                           reply_markup=get_keyboard("Закрыть заявку", f"ticket_completed_{ticket_id}"))
+
+
+async def admin_to_accept_button(reply_text, ticket_id):
+    await bot.send_message(chat_id=admin_id, text=f"Новая заявка: \n{reply_text.as_html()}\n"
+                                                  f"с номером {ticket_id} создана.",
+                           reply_markup=get_keyboard("Принять заявку", f"ticket_accept_{ticket_id}"))
 
 
 @dispatcher.message(Command("start"))
@@ -87,8 +95,8 @@ async def cmd_add_ticket(message: types.Message, command: CommandObject):
     else:
         ticket_dict = new_ticket(command.args, f"Запрос от {message.from_user.full_name}", message.chat.id)
         reply_text = reply_list(ticket_dict)
-        await Ticket.add_ticket(ticket_dict)
-        await admin_to_accept_button(reply_text, ticket_dict)
+        ticket_id = await Ticket.add_ticket(ticket_dict)
+        await admin_to_accept_button(reply_text, ticket_id)
         if message.chat.id != admin_id:
             await message.reply(**reply_text.as_kwargs())
 
@@ -107,6 +115,7 @@ async def main():
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
