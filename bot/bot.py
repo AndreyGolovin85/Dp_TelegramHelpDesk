@@ -16,18 +16,20 @@ admin_id = int(os.getenv("ADMIN_ID"))
 dispatcher = Dispatcher()
 
 
-def buttons_keyboard(ticket_id: int, keyboard_type: int = 0):
+def buttons_keyboard(ticket_id: int, keyboard_type: int = 0) -> types.InlineKeyboardMarkup:
     if keyboard_type == 0:
         buttons = [
             [
                 types.InlineKeyboardButton(text="Принять заявку", callback_data=f"ticket_accept_{ticket_id}"),
-                types.InlineKeyboardButton(text="Отменить заявку", callback_data=f"ticket_canceled_{ticket_id}"),
+                types.InlineKeyboardButton(text="Отменить заявку", callback_data=f"ticket_canceled_{ticket_id}")
             ]
         ]
     elif keyboard_type == 1:
         buttons = [
-            types.InlineKeyboardButton(text="Отменить заявку", callback_data=f"ticket_canceled_{ticket_id}"),
-            types.InlineKeyboardButton(text="Закрыть заявку", callback_data=f"ticket_completed_{ticket_id}")
+            [
+                types.InlineKeyboardButton(text="Отменить заявку", callback_data=f"ticket_canceled_{ticket_id}"),
+                types.InlineKeyboardButton(text="Закрыть заявку", callback_data=f"ticket_completed_{ticket_id}")
+            ]
         ]
     else:  # Как заготовка, на случай если захочется повозиться и добавить кнопку отмены под каждый тикет в выводе
         buttons = [types.InlineKeyboardButton(text="Отменить заявку", callback_data=f"ticket_canceled_{ticket_id}")]
