@@ -25,7 +25,7 @@ def check_user_registration(user_uid):
 
 
 def new_ticket(description: str, title: str, user_id: int) -> TicketDict:
-    new = TicketDict(user_id, title, description)
+    new = TicketDict(user_uid=user_id, title=title, description=description)
     return new
 
 

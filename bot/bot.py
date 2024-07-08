@@ -3,7 +3,6 @@ import os
 import logging
 
 from aiogram.enums import ParseMode
-from aiogram.utils.keyboard import InlineKeyboardBuilder
 from dotenv import load_dotenv
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters.command import Command, CommandObject
@@ -17,10 +16,23 @@ admin_id = int(os.getenv("ADMIN_ID"))
 dispatcher = Dispatcher()
 
 
-def get_keyboard(text, call_data):
-    builder = InlineKeyboardBuilder()
-    builder.add(types.InlineKeyboardButton(text=text, callback_data=call_data))
-    return builder.as_markup()
+def buttons_keyboard(ticket_id: int, keyboard_type: int = 0):
+    if keyboard_type == 0:
+        buttons = [
+            [
+                types.InlineKeyboardButton(text="Принять заявку", callback_data=f"ticket_accept_{ticket_id}"),
+                types.InlineKeyboardButton(text="Отменить заявку", callback_data=f"ticket_canceled_{ticket_id}"),
+            ]
+        ]
+    elif keyboard_type == 1:
+        buttons = [
+            types.InlineKeyboardButton(text="Отменить заявку", callback_data=f"ticket_canceled_{ticket_id}"),
+            types.InlineKeyboardButton(text="Закрыть заявку", callback_data=f"ticket_completed_{ticket_id}")
+        ]
+    else:  # Как заготовка, на случай если захочется повозиться и добавить кнопку отмены под каждый тикет в выводе
+        buttons = [types.InlineKeyboardButton(text="Отменить заявку", callback_data=f"ticket_canceled_{ticket_id}")]
+    keyboard = types.InlineKeyboardMarkup(inline_keyboard=buttons)
+    return keyboard
 
 
 @dispatcher.callback_query(lambda call: call.data.startswith("ticket_"))
@@ -32,7 +44,11 @@ async def send_message_users(callback: types.CallbackQuery):
         await Ticket.edit_ticket_status(ticket.id, "in_work")
         await bot.send_message(chat_id=ticket.user_uid,
                                text=f"Ваша заявка: {ticket.id} \nОписание: {ticket.description}\nпринята в работу!")
-        await admin_to_completed_button(ticket_id)
+        await admin_complete_button(ticket_id)
+    elif status == "canceled":
+        await Ticket.edit_ticket_status(ticket.id, "rejected", "Заявка отменена администратором.")
+        await bot.send_message(chat_id=ticket.user_uid,
+                               text=f"Ваша заявка {ticket.id} отменена.")
     elif status == "completed":
         await Ticket.edit_ticket_status(ticket.id, status)
         await bot.send_message(chat_id=ticket.user_uid,
@@ -41,15 +57,15 @@ async def send_message_users(callback: types.CallbackQuery):
     await callback.answer()
 
 
-async def admin_to_completed_button(ticket_id):
+async def admin_complete_button(ticket_id):
     await bot.send_message(chat_id=admin_id, text=f"Заявка {ticket_id} принята в работу!",
-                           reply_markup=get_keyboard("Закрыть заявку", f"ticket_completed_{ticket_id}"))
+                           reply_markup=buttons_keyboard(ticket_id, 1))
 
 
 async def admin_to_accept_button(reply_text, ticket_id):
     await bot.send_message(chat_id=admin_id, text=f"Новая заявка: \n{reply_text.as_html()}\n"
                                                   f"с номером {ticket_id} создана.",
-                           reply_markup=get_keyboard("Принять заявку", f"ticket_accept_{ticket_id}"))
+                           reply_markup=buttons_keyboard(ticket_id))
 
 
 @dispatcher.message(Command("start"))
@@ -99,6 +115,35 @@ async def cmd_add_ticket(message: types.Message, command: CommandObject):
         await admin_to_accept_button(reply_text, ticket_id)
         if message.chat.id != admin_id:
             await message.reply(**reply_text.as_kwargs())
+
+
+@dispatcher.message(Command("cancel"))
+async def cmd_cancel_ticket(message: types.Message, command: CommandObject):
+    if command.args is None:
+        await message.reply("Правильный вызов данной команды: */cancel <номер тикета для отмены>*",
+                            parse_mode=ParseMode.MARKDOWN)
+        tickets = Ticket.list_ticket_ids(message.chat.id)
+        string_ticket = "Список ваших активных тикетов:"
+        inactive = 0
+        for ticket in tickets:
+            if ticket["status"] not in ["completed", "rejected"]:
+                tmp = f"\n" + str(ticket["id"]) + ": " + ticket["description"] + ". Статус: " + ticket["status"]
+                string_ticket += tmp
+            else:
+                inactive += 1
+        if not tickets or inactive == len(tickets):
+            await message.answer("У вас нет активных тикетов.")
+        await message.answer(string_ticket)
+        return
+    if not Ticket.list_tickets(uid=message.chat.id):
+        await message.answer("Вы ещё не создали ни одного тикета.")
+        return
+    ticket_id = int(command.args)
+    if not Ticket.get_ticket_by_id(ticket_id):
+        await message.reply("Вы не создавали тикета с таким номером.")
+        return
+    await Ticket.edit_ticket_status(ticket_id, "rejected", "Заявка отменена пользователем.")
+    await message.reply(f"Ваш тикет под номером {ticket_id} успешно отменен.")
 
 
 @dispatcher.message(Command("check_admin"))

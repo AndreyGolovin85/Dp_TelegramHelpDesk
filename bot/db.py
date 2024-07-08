@@ -1,7 +1,8 @@
-from sqlalchemy import Integer, String, Text, create_engine, select, ForeignKey, DateTime
+from sqlalchemy import Integer, String, Text, create_engine, select, ForeignKey, DateTime, and_
 from sqlalchemy.orm import DeclarativeBase, sessionmaker, relationship
 from sqlalchemy.orm import Mapped, mapped_column
 from datetime import datetime
+from typing import Optional
 
 from custom_types import UserDict, TicketDict
 
@@ -48,12 +49,13 @@ class User(Base):
 
 class Ticket(Base, sessionmaker):
     __tablename__ = "tickets"
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     title: Mapped[str] = mapped_column(String(30))
     description: Mapped[str] = mapped_column(Text)
     status: Mapped[str] = mapped_column(String['new', 'in_work', 'completed', 'rejected'])
-    dates_created = mapped_column(DateTime, default=datetime.utcnow)
-    last_updated: Mapped[datetime] = mapped_column(DateTime, onupdate=datetime.utcnow)
+    dates_created = mapped_column(DateTime, default=datetime.utcnow())
+    last_updated: Mapped[datetime] = mapped_column(DateTime, onupdate=datetime.utcnow())
+    update_reason: Mapped[Optional[str]] = mapped_column(String)
 
     user_uid: Mapped[int] = mapped_column(Integer, ForeignKey("users.user_uid"))
     user: Mapped["User"] = relationship("User", back_populates="tickets")
@@ -75,7 +77,16 @@ class Ticket(Base, sessionmaker):
                 select_tickets = select(Ticket).where(status == Ticket.status)
 
             for ticket in session.query(select_tickets.subquery()).all():
-                tickets_dict.append(TicketDict(ticket.user_uid, ticket.title, ticket.description, ticket.status))
+                tickets_dict.append(TicketDict(ticket.user_uid, ticket.title, str(ticket.description), ticket.status))
+        return tickets_dict
+
+    @classmethod
+    def list_ticket_ids(cls, uid: int) -> list[dict]:
+        tickets_dict = []
+        with Session() as session:
+            select_tickets = select(Ticket).where(uid == Ticket.user_uid)
+            for ticket in session.query(select_tickets.subquery()).all():
+                tickets_dict.append({'id': ticket.id, 'description': ticket.description, 'status': ticket.status})
         return tickets_dict
 
     @classmethod
@@ -84,32 +95,21 @@ class Ticket(Base, sessionmaker):
         with Session() as session:
             ticket = session.query(Ticket).filter_by(id=ticket_id).one_or_none()
             if not ticket:
-                raise ValueError(f"Тикет с id {ticket_id} не найден!")
+                print(f"Тикет с id {ticket_id} не найден!")
+                return
             return ticket
 
     @classmethod
-    async def edit_ticket_status(cls, ticket_id: int, new_status: str):
+    async def edit_ticket_status(cls, ticket_id: int, new_status: str, reason: str = "Тикет завершен."):
         """Редактирует статус тикета в БД по его ID"""
         with Session() as session:
-            ticket = session.query(Ticket).filter_by(id=ticket_id).first()
+            ticket = session.query(Ticket).filter_by(id=ticket_id).one_or_none()
             if ticket:
+                if new_status == ("rejected" or "completed"):
+                    ticket.update_reason = reason
                 ticket.status = new_status
                 ticket.last_updated = datetime.utcnow()
                 session.commit()
-
-    # @classmethod
-    # async def edit_ticket_status(cls, ticket: TicketDict, new_status: str):
-    #     """Редактирует статус тикетов в БД"""
-    #     with Session() as session:
-    #         list_ticket = select(Ticket).where(
-    #             and_(
-    #                 Ticket.user_uid == ticket.user_uid,
-    #                 Ticket.title == ticket.title,
-    #                 Ticket.description == ticket.description,
-    #                 Ticket.status == ticket.status))
-    #         ticket_session = session.scalars(list_ticket).first()
-    #         ticket_session.status = new_status
-    #         session.commit()
 
     @classmethod
     async def add_ticket(cls, ticket_dict: TicketDict):
@@ -119,6 +119,7 @@ class Ticket(Base, sessionmaker):
                 user_uid=ticket_dict.user_uid,
                 title=ticket_dict.title,
                 description=ticket_dict.description,
+                dates_created=datetime.utcnow(),
                 last_updated=datetime.utcnow(),
                 status=ticket_dict.status
             )
