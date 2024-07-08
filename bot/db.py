@@ -82,6 +82,7 @@ class Ticket(Base, sessionmaker):
 
     @classmethod
     def list_ticket_ids(cls, uid: int) -> list[dict]:
+        """Получает список словарей с ID тикетов"""
         tickets_dict = []
         with Session() as session:
             select_tickets = select(Ticket).where(uid == Ticket.user_uid)

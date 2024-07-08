@@ -17,6 +17,9 @@ dispatcher = Dispatcher()
 
 
 def buttons_keyboard(ticket_id: int, keyboard_type: int = 0) -> types.InlineKeyboardMarkup:
+    """ Формирует клавиатуру в зависимости от нужного варианта.
+    0 - по умолчанию, кнопки Принять / Отменить.
+    1 - кнопки Отменить / Закрыть """
     if keyboard_type == 0:
         buttons = [
             [
