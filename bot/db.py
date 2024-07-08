@@ -52,8 +52,8 @@ class Ticket(Base, sessionmaker):
     title: Mapped[str] = mapped_column(String(30))
     description: Mapped[str] = mapped_column(Text)
     status: Mapped[str] = mapped_column(String['new', 'in_work', 'completed', 'rejected'])
-    dates_created = mapped_column(DateTime, default=datetime.utcnow)
-    last_updated: Mapped[datetime] = mapped_column(DateTime, onupdate=datetime.utcnow)
+    datess = mapped_column(DateTime, default=datetime.utcnow)
+    last_updated: Mapped[datetime] = mapped_column(DateTime, onupdate=datetime.utcnow())
 
     user_uid: Mapped[int] = mapped_column(Integer, ForeignKey("users.user_uid"))
     user: Mapped["User"] = relationship("User", back_populates="tickets")
@@ -96,20 +96,6 @@ class Ticket(Base, sessionmaker):
                 ticket.status = new_status
                 ticket.last_updated = datetime.utcnow()
                 session.commit()
-
-    # @classmethod
-    # async def edit_ticket_status(cls, ticket: TicketDict, new_status: str):
-    #     """Редактирует статус тикетов в БД"""
-    #     with Session() as session:
-    #         list_ticket = select(Ticket).where(
-    #             and_(
-    #                 Ticket.user_uid == ticket.user_uid,
-    #                 Ticket.title == ticket.title,
-    #                 Ticket.description == ticket.description,
-    #                 Ticket.status == ticket.status))
-    #         ticket_session = session.scalars(list_ticket).first()
-    #         ticket_session.status = new_status
-    #         session.commit()
 
     @classmethod
     async def add_ticket(cls, ticket_dict: TicketDict):
