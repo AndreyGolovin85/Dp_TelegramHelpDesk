@@ -127,7 +127,7 @@ async def cmd_cancel_ticket(message: types.Message, command: CommandObject):
         inactive = 0
         for ticket in tickets:
             if ticket["status"] not in ["completed", "rejected"]:
-                tmp = f"\n" + str(ticket["id"]) + ": " + ticket["description"] + ". Статус: " + ticket["status"]
+                tmp = "\n" + str(ticket["id"]) + ": " + ticket["description"] + ". Статус: " + ticket["status"]
                 string_ticket += tmp
             else:
                 inactive += 1
