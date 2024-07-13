@@ -134,7 +134,8 @@ async def cmd_add_ticket(message: types.Message, command: CommandObject):
 @dispatcher.message(Command("cancel"))
 async def cmd_cancel_ticket(message: types.Message, command: CommandObject):
     if command.args is None:
-        await message.reply("Правильный вызов данной команды: */cancel <номер тикета для отмены>*",
+        await message.reply("Правильный вызов данной команды: */cancel <номер тикета для отмены>*."
+                            "\nПод отменой подразумевается, что ваша проблема решаться не будет (например, тикет создан по ошибке или вмешательство не требуется).",
                             parse_mode=ParseMode.MARKDOWN)
         tickets = active_tickets(message.chat.id)
         await message.answer(tickets)
@@ -149,7 +150,8 @@ async def cmd_cancel_ticket(message: types.Message, command: CommandObject):
 @dispatcher.message(Command("complete"))
 async def cmd_complete_ticket(message: types.Message, command: CommandObject):
     if command.args is None:
-        await message.reply("Правильный вызов данной команды: */complete <номер тикета для завершения>*",
+        await message.reply("Правильный вызов данной команды: */complete <номер тикета для завершения>*"
+                            "\nИспользовать, если проблема решена.",
                             parse_mode=ParseMode.MARKDOWN)
         tickets = active_tickets(message.chat.id)
         await message.answer(tickets)
