@@ -173,7 +173,7 @@ async def cmd_check_authority(message: types.Message):
         user = check_user_registration(message.chat.id)
         if not user:
             user_dict = UserDict(user_uid=message.chat.id, first_name=message.chat.first_name, last_name=message.chat.last_name, department="Admin", is_priority=99)
-            User.add_user(user_dict)
+            await User.add_user(user_dict)
         return
 
     await message.reply("Нет прав администратора.")

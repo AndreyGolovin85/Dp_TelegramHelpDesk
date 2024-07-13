@@ -27,7 +27,7 @@ class User(Base, sessionmaker):
                f"department={self.department!s}, is_priority={self.is_priority!s})"
 
     @classmethod
-    def add_user(cls, user_dict: UserDict):
+    async def add_user(cls, user_dict: UserDict):
         with Session() as session:
             new_user = User(
                 user_uid=user_dict.user_uid,
