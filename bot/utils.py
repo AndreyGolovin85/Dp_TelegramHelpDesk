@@ -36,10 +36,25 @@ def new_user(user_uid: int, first_name: str, last_name: str) -> UserDict:
 
 def reply_list(item: TicketDict | None = None) -> aiogram.utils.formatting.Text:
     if item is None:
-        item = Ticket.list_tickets()[-1]
+        item = Ticket.as_ticket_dict(Ticket[-1])
     return as_list(
         f"ID пользователя: {item.user_uid}",
         f"Заголовок: {item.title}",
         f"Описание: {item.description}",
         f"Статус: {item.status}",
         sep='\n')
+
+
+def active_tickets(chat_id: int) -> str:
+    tickets = Ticket.list_ticket_ids(chat_id)
+    string_ticket = "Список ваших активных тикетов:"
+    inactive = 0
+    for ticket in tickets:
+        if ticket["status"] not in ["completed", "rejected"]:
+            tmp = "\n" + str(ticket["id"]) + ": " + ticket["description"] + ". Статус: " + ticket["status"]
+            string_ticket += tmp
+        else:
+            inactive += 1
+    if not tickets or inactive == len(tickets):
+        return "У вас нет активных тикетов."
+    return string_ticket

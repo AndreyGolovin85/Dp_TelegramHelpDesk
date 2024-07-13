@@ -2,13 +2,15 @@ import asyncio
 import os
 import logging
 
+from typing import Literal
 from aiogram.enums import ParseMode
 from dotenv import load_dotenv
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters.command import Command, CommandObject
 
-from db import Ticket
-from utils import reply_list, new_ticket, answer_start, check_user_registration
+from custom_types import UserDict
+from db import Ticket, User
+from utils import reply_list, new_ticket, answer_start, check_user_registration, active_tickets
 
 load_dotenv()
 bot = Bot(token=os.getenv("API_TOKEN"))
@@ -16,18 +18,18 @@ admin_id = int(os.getenv("ADMIN_ID"))
 dispatcher = Dispatcher()
 
 
-def buttons_keyboard(ticket_id: int, keyboard_type: int = 0) -> types.InlineKeyboardMarkup:
+def buttons_keyboard(ticket_id: int, keyboard_type: Literal["accept", "complete"] = "accept") -> types.InlineKeyboardMarkup:
     """ Формирует клавиатуру в зависимости от нужного варианта.
-    0 - по умолчанию, кнопки Принять / Отменить.
-    1 - кнопки Отменить / Закрыть """
-    if keyboard_type == 0:
+    'accept' - по умолчанию, кнопки Принять / Отменить.
+    'complete' - кнопки Отменить / Закрыть """
+    if keyboard_type == "accept":
         buttons = [
             [
                 types.InlineKeyboardButton(text="Принять заявку", callback_data=f"ticket_accept_{ticket_id}"),
                 types.InlineKeyboardButton(text="Отменить заявку", callback_data=f"ticket_canceled_{ticket_id}")
             ]
         ]
-    elif keyboard_type == 1:
+    elif keyboard_type == "complete":
         buttons = [
             [
                 types.InlineKeyboardButton(text="Отменить заявку", callback_data=f"ticket_canceled_{ticket_id}"),
@@ -64,7 +66,7 @@ async def send_message_users(callback: types.CallbackQuery):
 
 async def admin_complete_button(ticket_id):
     await bot.send_message(chat_id=admin_id, text=f"Заявка {ticket_id} принята в работу!",
-                           reply_markup=buttons_keyboard(ticket_id, 1))
+                           reply_markup=buttons_keyboard(ticket_id, "complete"))
 
 
 async def admin_to_accept_button(reply_text, ticket_id):
@@ -127,23 +129,8 @@ async def cmd_cancel_ticket(message: types.Message, command: CommandObject):
     if command.args is None:
         await message.reply("Правильный вызов данной команды: */cancel <номер тикета для отмены>*",
                             parse_mode=ParseMode.MARKDOWN)
-        tickets = Ticket.list_ticket_ids(message.chat.id)
-        string_ticket = "Список ваших активных тикетов:"
-        inactive = 0
-        for ticket in tickets:
-            if ticket["status"] not in ["completed", "rejected"]:
-                tmp = "\n" + str(ticket["id"]) + ": " + ticket["description"] + ". Статус: " + ticket["status"]
-                string_ticket += tmp
-            else:
-                inactive += 1
-        if not tickets or inactive == len(tickets):
-            await message.answer("У вас нет активных тикетов.")
-            return
-        await message.answer(string_ticket)
-        return
-    if not Ticket.list_tickets(uid=message.chat.id):
-        await message.answer("Вы ещё не создали ни одного тикета.")
-        return
+        tickets = active_tickets(message.chat.id)
+        await message.answer(tickets)
     ticket_id = int(command.args)
     if not Ticket.get_ticket_by_id(ticket_id):
         await message.reply("Вы не создавали тикета с таким номером.")
@@ -152,10 +139,30 @@ async def cmd_cancel_ticket(message: types.Message, command: CommandObject):
     await message.reply(f"Ваш тикет под номером {ticket_id} успешно отменен.")
 
 
+@dispatcher.message(Command("complete"))
+async def cmd_complete_ticket(message: types.Message, command: CommandObject):
+    if command.args is None:
+        await message.reply("Правильный вызов данной команды: */complete <номер тикета для завершения>*",
+                            parse_mode=ParseMode.MARKDOWN)
+        tickets = active_tickets(message.chat.id)
+        await message.answer(tickets)
+    ticket_id = int(command.args)
+    if not Ticket.get_ticket_by_id(ticket_id):
+        await message.reply("Вы не создавали тикета с таким номером.")
+        return
+    await Ticket.edit_ticket_status(ticket_id, "completed", "Заявка завершена пользователем.")
+    await message.reply(f"Ваш тикет под номером {ticket_id} успешно завершен.")
+
+
 @dispatcher.message(Command("check_admin"))
 async def cmd_check_authority(message: types.Message):
     if message.chat.id == admin_id:
         await message.reply("Права администратора подтверждены.")
+        # Регистрация администратора в таблице Users если он не записан в базе
+        user = check_user_registration(message.chat.id)
+        if not user:
+            user_dict = UserDict(user_uid=message.chat.id, first_name=message.chat.first_name, last_name=message.chat.last_name, department="Admin", is_priority=99)
+            User.add_user(user_dict)
         return
 
     await message.reply("Нет прав администратора.")

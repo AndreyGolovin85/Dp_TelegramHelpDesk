@@ -2,7 +2,7 @@ from sqlalchemy import Integer, String, Text, create_engine, select, ForeignKey,
 from sqlalchemy.orm import DeclarativeBase, sessionmaker, relationship
 from sqlalchemy.orm import Mapped, mapped_column
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Literal
 
 from custom_types import UserDict, TicketDict
 
@@ -11,7 +11,7 @@ class Base(DeclarativeBase):
     pass
 
 
-class User(Base):
+class User(Base, sessionmaker):
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -44,7 +44,7 @@ class User(Base):
     @classmethod
     def get_user_by_uid(cls, user_uid: int):
         with Session() as session:
-            return session.query(User).filter_by(user_uid=user_uid).first()
+            return session.query(User).filter_by(user_uid=user_uid).one_or_none()
 
 
 class Ticket(Base, sessionmaker):
@@ -63,6 +63,9 @@ class Ticket(Base, sessionmaker):
     def __repr__(self) -> str:
         return f"User(user_id={self.user_uid} title={self.title!r}, description={self.description!r}," \
                f"status = {self.status})"
+
+    def as_ticket_dict(self) -> TicketDict:
+        return TicketDict(user_uid=self.user_uid, title=self.title, description=self.description, status=self.status)
 
     @classmethod
     def list_tickets(cls, uid=0, status: str | None = None) -> list[TicketDict]:
@@ -101,7 +104,7 @@ class Ticket(Base, sessionmaker):
             return ticket
 
     @classmethod
-    async def edit_ticket_status(cls, ticket_id: int, new_status: str, reason: str = "Тикет завершен."):
+    async def edit_ticket_status(cls, ticket_id: int, new_status: Literal["in_work", "completed", "rejected"], reason: str = "Тикет завершен администратором."):
         """Редактирует статус тикета в БД по его ID"""
         with Session() as session:
             ticket = session.query(Ticket).filter_by(id=ticket_id).one_or_none()
