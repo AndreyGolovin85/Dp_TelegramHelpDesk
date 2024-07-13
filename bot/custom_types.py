@@ -1,4 +1,8 @@
 from dataclasses import dataclass
+from typing import TypeAlias, Literal
+
+
+status_type: TypeAlias = Literal["new", "in_work", "completed", "rejected"]
 
 
 @dataclass
@@ -15,4 +19,4 @@ class TicketDict:
     user_uid: int
     title: str
     description: str
-    status: str = "new"
+    status: status_type = "new"

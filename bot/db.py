@@ -1,9 +1,9 @@
 from sqlalchemy import Integer, String, Text, create_engine, select, ForeignKey, DateTime
 from sqlalchemy.orm import DeclarativeBase, sessionmaker, relationship
 from sqlalchemy.orm import Mapped, mapped_column
-from datetime import datetime
-from typing import Optional, Literal
-from custom_types import UserDict, TicketDict
+from datetime import datetime, timezone
+from typing import Optional
+from custom_types import UserDict, TicketDict, status_type
 
 
 class Base(DeclarativeBase):
@@ -51,9 +51,9 @@ class Ticket(Base, sessionmaker):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     title: Mapped[str] = mapped_column(String(30))
     description: Mapped[str] = mapped_column(Text)
-    status: Mapped[str] = mapped_column(String['new', 'in_work', 'completed', 'rejected'])
-    dates_created = mapped_column(DateTime, default=datetime.utcnow())
-    last_updated: Mapped[datetime] = mapped_column(DateTime, onupdate=datetime.utcnow())
+    status: Mapped[status_type] = mapped_column(String[status_type])
+    dates_created = mapped_column(DateTime, default=datetime.now(tz=timezone.utc))
+    last_updated: Mapped[datetime] = mapped_column(DateTime, onupdate=datetime.now(tz=timezone.utc))
     update_reason: Mapped[Optional[str]] = mapped_column(String)
 
     user_uid: Mapped[int] = mapped_column(Integer, ForeignKey("users.user_uid"))
@@ -103,15 +103,15 @@ class Ticket(Base, sessionmaker):
             return ticket
 
     @classmethod
-    async def edit_ticket_status(cls, ticket_id: int, new_status: Literal["in_work", "completed", "rejected"], reason: str = "Тикет завершен администратором."):
+    async def edit_ticket_status(cls, ticket_id: int, new_status: status_type, reason: str = "Тикет завершен администратором."):
         """Редактирует статус тикета в БД по его ID"""
         with Session() as session:
             ticket = session.query(Ticket).filter_by(id=ticket_id).one_or_none()
             if ticket:
-                if new_status == ("rejected" or "completed"):
+                if new_status in ("rejected", "completed"):
                     ticket.update_reason = reason
                 ticket.status = new_status
-                ticket.last_updated = datetime.utcnow()
+                ticket.last_updated = datetime.now(tz=timezone.utc)
                 session.commit()
 
     @classmethod
@@ -122,8 +122,8 @@ class Ticket(Base, sessionmaker):
                 user_uid=ticket_dict.user_uid,
                 title=ticket_dict.title,
                 description=ticket_dict.description,
-                dates_created=datetime.utcnow(),
-                last_updated=datetime.utcnow(),
+                dates_created=datetime.now(tz=timezone.utc),
+                last_updated=datetime.now(tz=timezone.utc),
                 status=ticket_dict.status
             )
             session.add(new_ticket)

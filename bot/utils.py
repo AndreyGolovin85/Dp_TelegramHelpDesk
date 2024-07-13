@@ -1,11 +1,11 @@
-import aiogram
-from aiogram.utils.formatting import as_list
+from aiogram.utils.formatting import as_list, Text
+from aiogram.types import Message
 
 from custom_types import UserDict, TicketDict
 from db import Ticket, User
 
 
-def answer_start(message):
+def answer_start(message: Message):
     user_uid = message.chat.id
     first_name = message.chat.first_name
     last_name = message.chat.last_name
@@ -16,7 +16,7 @@ def answer_start(message):
         answer = "Вы успешно зарегистрировались!"
     else:
         answer = "Вы уже зарегистрированы!"
-    return f"{first_name}, добро пожаловать в бот! {answer}"
+    return f"{first_name}, добро пожаловать в бот!\n{answer}"
 
 
 def check_user_registration(user_uid):
@@ -34,9 +34,9 @@ def new_user(user_uid: int, first_name: str, last_name: str) -> UserDict:
     return user
 
 
-def reply_list(item: TicketDict | None = None) -> aiogram.utils.formatting.Text:
+def reply_list(item: TicketDict | None = None) -> Text:
     if item is None:
-        item = Ticket.as_ticket_dict(Ticket[-1])
+        item = Ticket[-1]
     return as_list(
         f"ID пользователя: {item.user_uid}",
         f"Заголовок: {item.title}",
@@ -50,7 +50,7 @@ def active_tickets(chat_id: int) -> str:
     string_ticket = "Список ваших активных тикетов:"
     inactive = 0
     for ticket in tickets:
-        if ticket["status"] not in ["completed", "rejected"]:
+        if ticket["status"] not in ("completed", "rejected"):
             tmp = "\n" + str(ticket["id"]) + ": " + ticket["description"] + ". Статус: " + ticket["status"]
             string_ticket += tmp
         else:
