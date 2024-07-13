@@ -94,12 +94,18 @@ async def cmd_tickets(message: types.Message, command: CommandObject):
 
     if command.args == "new":
         user_tickets = Ticket.list_tickets(status="new")
+        if not user_tickets:
+            await message.reply("В базе данных нет тикетов.")
+            return
         for user_ticket in user_tickets:
             await message.answer(**reply_list(user_ticket).as_kwargs())
         return
 
     if command.args is None:
         user_tickets = Ticket.list_tickets()
+        if not user_tickets:
+            await message.reply("В базе данных нет тикетов.")
+            return
         for user_ticket in user_tickets:
             await message.answer(**reply_list(user_ticket).as_kwargs())
         return
