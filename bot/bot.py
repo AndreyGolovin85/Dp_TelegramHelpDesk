@@ -139,6 +139,7 @@ async def cmd_cancel_ticket(message: types.Message, command: CommandObject):
                             parse_mode=ParseMode.MARKDOWN)
         tickets = active_tickets(message.chat.id)
         await message.answer(tickets)
+        return
     ticket_id = int(command.args)
     if not Ticket.get_ticket_by_id(ticket_id):
         await message.reply("Вы не создавали тикета с таким номером.")
@@ -155,6 +156,7 @@ async def cmd_complete_ticket(message: types.Message, command: CommandObject):
                             parse_mode=ParseMode.MARKDOWN)
         tickets = active_tickets(message.chat.id)
         await message.answer(tickets)
+        return
     ticket_id = int(command.args)
     if not Ticket.get_ticket_by_id(ticket_id):
         await message.reply("Вы не создавали тикета с таким номером.")
