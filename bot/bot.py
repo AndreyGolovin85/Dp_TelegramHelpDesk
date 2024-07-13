@@ -12,6 +12,7 @@ from custom_types import UserDict
 from db import Ticket, User
 from utils import reply_list, new_ticket, answer_start, check_user_registration, active_tickets
 
+
 load_dotenv()
 bot = Bot(token=os.getenv("API_TOKEN"))
 admin_id = int(os.getenv("ADMIN_ID"))
@@ -73,6 +74,7 @@ async def admin_to_accept_button(reply_text, ticket_id):
     await bot.send_message(chat_id=admin_id, text=f"Новая заявка: \n{reply_text.as_html()}\n"
                                                   f"с номером {ticket_id} создана.",
                            reply_markup=buttons_keyboard(ticket_id))
+
 
 
 @dispatcher.message(Command("start"))
