@@ -76,7 +76,6 @@ async def admin_to_accept_button(reply_text, ticket_id):
                            reply_markup=buttons_keyboard(ticket_id))
 
 
-
 @dispatcher.message(Command("start"))
 async def cmd_start(message: types.Message):
     await message.answer(answer_start(message))
