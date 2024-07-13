@@ -57,7 +57,7 @@ async def send_message_users(callback: types.CallbackQuery):
         await bot.send_message(chat_id=ticket.user_uid,
                                text=f"Ваша заявка {ticket.id} отменена.")
     elif status == "completed":
-        await Ticket.edit_ticket_status(ticket.id, status)
+        await Ticket.edit_ticket_status(ticket.id, "completed")
         await bot.send_message(chat_id=ticket.user_uid,
                                text=f"Ваша заявка: {ticket.id} \nОписание: {ticket.description}\nвыполнена!")
 
