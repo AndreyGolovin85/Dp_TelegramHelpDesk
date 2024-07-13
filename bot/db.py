@@ -3,7 +3,6 @@ from sqlalchemy.orm import DeclarativeBase, sessionmaker, relationship
 from sqlalchemy.orm import Mapped, mapped_column
 from datetime import datetime
 from typing import Optional, Literal
-
 from custom_types import UserDict, TicketDict
 
 
