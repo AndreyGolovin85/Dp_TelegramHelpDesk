@@ -135,7 +135,7 @@ async def cmd_add_ticket(message: types.Message, command: CommandObject):
 async def cmd_cancel_ticket(message: types.Message, command: CommandObject):
     if command.args is None:
         await message.reply("Правильный вызов данной команды: */cancel <номер тикета для отмены>*."
-                            "\nПод отменой подразумевается, что ваша проблема решаться не будет (например, тикет создан по ошибке или вмешательство не требуется).",
+                            "\nПод отменой подразумевается, что ваша проблема решаться не будет (например, тикет создан по ошибке).",
                             parse_mode=ParseMode.MARKDOWN)
         tickets = active_tickets(message.chat.id)
         await message.answer(tickets)
