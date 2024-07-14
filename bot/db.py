@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from datetime import datetime, timezone
 
-from custom_types import TicketDict, TicketIdDict, UserDict, status_type
+from custom_types import TicketDict, TicketDictID, UserDTO, status_type
 from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, create_engine, select
 from sqlalchemy.orm import DeclarativeBase, Mapped, MappedAsDataclass, mapped_column, relationship, sessionmaker
 
@@ -23,15 +23,9 @@ class Base(MappedAsDataclass, DeclarativeBase, repr=False, unsafe_hash=True, kw_
         use_existing_column=False,
     )
 
-    @classmethod
-    def __tablename__(cls: "type[Base]") -> str:
-        """
-        Generate __tablename__ automatically
-        """
-        return cls.__name__.lower() + "s"
-
 
 class User(Base, sessionmaker):
+    __tablename__ = "users"
     user_uid: Mapped[int] = mapped_column(Integer)
     first_name: Mapped[str] = mapped_column(String(30))
     last_name: Mapped[str] = mapped_column(String(30))
@@ -52,7 +46,7 @@ def get_user_by_uid(user_uid: int) -> User | None:
         return session.query(User).filter_by(user_uid=user_uid).one_or_none()
 
 
-async def add_user(user_dict: UserDict) -> User:
+def add_user(user_dict: UserDTO) -> User:
     with Session() as session:
         new_user = User(
             user_uid=user_dict.user_uid,
@@ -67,6 +61,7 @@ async def add_user(user_dict: UserDict) -> User:
 
 
 class Ticket(Base, sessionmaker):
+    __tablename__ = "tickets"
     user_uid: Mapped[int] = mapped_column(Integer, ForeignKey("users.user_uid"))
     user: Mapped["User"] = relationship("User", back_populates="tickets", init=False)
     title: Mapped[str] = mapped_column(String(30))
@@ -101,7 +96,7 @@ def list_tickets(uid=0, status: str | None = None) -> Sequence[TicketDict]:
         ]
 
 
-def list_ticket_ids(uid: int) -> Sequence[TicketIdDict]:
+def list_ticket_ids(uid: int) -> Sequence[TicketDictID]:
     """Получает список словарей с ID тикетов"""
     with Session() as session:
         select_tickets = select(Ticket).where(Ticket.user_uid.__eq__(uid))
@@ -121,7 +116,7 @@ def get_ticket_by_id(ticket_id: int) -> Ticket | None:
         return ticket
 
 
-async def edit_ticket_status(
+def edit_ticket_status(
     ticket_id: int,
     new_status: status_type,
     reason: str = "Тикет завершен администратором.",
@@ -137,7 +132,7 @@ async def edit_ticket_status(
             session.commit()
 
 
-async def add_ticket(ticket_dict: TicketDict) -> int:
+def add_ticket(ticket_dict: TicketDict) -> int:
     """Запись тикетов в БД"""
     with Session() as session:
         new_ticket = Ticket(

@@ -8,7 +8,7 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.enums import ParseMode
 from aiogram.filters.command import Command, CommandObject
 from aiogram.utils.formatting import Text
-from custom_types import UserDict
+from custom_types import UserDTO
 from db import add_ticket, add_user, edit_ticket_status, get_ticket_by_id, list_tickets
 from dotenv import load_dotenv
 from utils import active_tickets, answer_start, check_user_registration, new_ticket, raw_reply, reply_list
@@ -17,6 +17,7 @@ load_dotenv()
 API_TOKEN = os.getenv("API_TOKEN")
 _ADMIN_ID = os.getenv("ADMIN_ID")
 if not API_TOKEN or not _ADMIN_ID:
+    logging.error("Отстутствуют переменные ENV.")
     sys.exit(1)
 
 bot = Bot(token=API_TOKEN)
@@ -81,14 +82,14 @@ async def send_message_users(callback: types.CallbackQuery):
         return
 
     if status == "accept":
-        await edit_ticket_status(ticket.id, "in_work")
+        edit_ticket_status(ticket.id, "in_work")
         await bot.send_message(
             chat_id=ticket.user_uid,
             text=f"Ваша заявка: {ticket.id} \nОписание: {ticket.description}\nпринята в работу!",
         )
         await admin_complete_button(ticket_id)
     elif status == "canceled":
-        await edit_ticket_status(
+        edit_ticket_status(
             ticket.id,
             "rejected",
             "Заявка отменена администратором.",
@@ -98,7 +99,7 @@ async def send_message_users(callback: types.CallbackQuery):
             text=f"Ваша заявка {ticket.id} отменена.",
         )
     elif status == "completed":
-        await edit_ticket_status(ticket.id, "completed")
+        edit_ticket_status(ticket.id, "completed")
         await bot.send_message(
             chat_id=ticket.user_uid,
             text=f"Ваша заявка: {ticket.id} \nОписание: {ticket.description}\nвыполнена!",
@@ -175,7 +176,7 @@ async def cmd_add_ticket(message: types.Message, command: CommandObject) -> None
         message.chat.id,
     )
     reply_text = raw_reply(ticket_dict)
-    ticket_id = await add_ticket(ticket_dict)
+    ticket_id = add_ticket(ticket_dict)
     await admin_to_accept_button(reply_text, ticket_id)
     if message.chat.id != ADMIN_ID:
         await message.reply(**reply_text.as_kwargs())
@@ -196,7 +197,7 @@ async def cmd_cancel_ticket(message: types.Message, command: CommandObject) -> N
     if not get_ticket_by_id(ticket_id):
         await message.reply("Вы не создавали тикета с таким номером.")
         return
-    await edit_ticket_status(ticket_id, "rejected", "Заявка отменена пользователем.")
+    edit_ticket_status(ticket_id, "rejected", "Заявка отменена пользователем.")
     await message.reply(f"Ваш тикет под номером {ticket_id} успешно отменен.")
 
 
@@ -215,7 +216,7 @@ async def cmd_complete_ticket(message: types.Message, command: CommandObject) ->
     if not get_ticket_by_id(ticket_id):
         await message.reply("Вы не создавали тикета с таким номером.")
         return
-    await edit_ticket_status(ticket_id, "completed", "Заявка завершена пользователем.")
+    edit_ticket_status(ticket_id, "completed", "Заявка завершена пользователем.")
     await message.reply(f"Ваш тикет под номером {ticket_id} успешно завершен.")
 
 
@@ -229,14 +230,14 @@ async def cmd_check_authority(message: types.Message) -> None:
     # Регистрация администратора в таблице Users если он не записан в базе.
     if check_user_registration(message.chat.id) or not message.chat.first_name or not message.chat.last_name:
         return
-    user_dict = UserDict(
+    user_dict = UserDTO(
         user_uid=message.chat.id,
         first_name=message.chat.first_name,
         last_name=message.chat.last_name,
         department="Admin",
         is_priority=99,
     )
-    await add_user(user_dict)
+    add_user(user_dict)
 
 
 async def main():

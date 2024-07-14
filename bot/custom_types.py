@@ -13,7 +13,7 @@ class StatusEnum(Enum):
     rejected = "rejected"
 
 
-class UserDict(BaseModel):
+class UserDTO(BaseModel):
     user_uid: int
     first_name: str
     last_name: str
@@ -28,5 +28,5 @@ class TicketDict(BaseModel):
     status: status_type = "new"
 
 
-class TicketIdDict(TicketDict):
+class TicketDictID(TicketDict):
     id: int

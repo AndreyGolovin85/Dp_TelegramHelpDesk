@@ -1,6 +1,6 @@
 from aiogram.types import Message
 from aiogram.utils.formatting import Text, as_list
-from custom_types import TicketDict, UserDict
+from custom_types import TicketDict, UserDTO
 from db import User, add_user, get_user_by_uid, list_ticket_ids
 
 
@@ -13,7 +13,7 @@ async def answer_start(message: Message) -> str | None:
     user_dict = new_user(user_uid, first_name, last_name)
     user = check_user_registration(user_uid)
     if not user:
-        await add_user(user_dict)
+        add_user(user_dict)
         answer = "Вы успешно зарегистрировались!"
     else:
         answer = "Вы уже зарегистрированы!"
@@ -28,8 +28,8 @@ def new_ticket(description: str, title: str, user_id: int) -> TicketDict:
     return TicketDict(user_uid=user_id, title=title, description=description)
 
 
-def new_user(user_uid: int, first_name: str, last_name: str) -> UserDict:
-    return UserDict(user_uid=user_uid, first_name=first_name, last_name=last_name)
+def new_user(user_uid: int, first_name: str, last_name: str) -> UserDTO:
+    return UserDTO(user_uid=user_uid, first_name=first_name, last_name=last_name)
 
 
 def raw_reply(item: TicketDict) -> Text:
