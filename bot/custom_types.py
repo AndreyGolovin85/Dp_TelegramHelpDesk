@@ -1,5 +1,5 @@
-from enum import Enum
 from typing import Literal, TypeAlias
+from enum import Enum
 
 from pydantic import BaseModel
 
@@ -27,5 +27,6 @@ class TicketDict(BaseModel):
     description: str
     status: status_type = "new"
 
-class Ticket_ID_Dict(TicketDict):
+
+class TicketIdDict(TicketDict):
     id: int

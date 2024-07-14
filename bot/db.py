@@ -1,9 +1,9 @@
+from collections.abc import Sequence
 from datetime import datetime, timezone
-from typing import Sequence
 
-from custom_types import Ticket_ID_Dict, TicketDict, UserDict, status_type
+from custom_types import TicketDict, TicketIdDict, UserDict, status_type
 from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, create_engine, select
-from sqlalchemy.orm import DeclarativeBase, Mapped, MappedAsDataclass, declared_attr, mapped_column, relationship, sessionmaker
+from sqlalchemy.orm import DeclarativeBase, Mapped, MappedAsDataclass, mapped_column, relationship, sessionmaker
 
 
 class Base(MappedAsDataclass, DeclarativeBase, repr=False, unsafe_hash=True, kw_only=True):
@@ -13,9 +13,16 @@ class Base(MappedAsDataclass, DeclarativeBase, repr=False, unsafe_hash=True, kw_
 
     __abstract__ = True
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True, autoincrement=True, init=False, sort_order=-9, use_existing_column=False)
+    id: Mapped[int] = mapped_column(
+        Integer,
+        primary_key=True,
+        index=True,
+        autoincrement=True,
+        init=False,
+        sort_order=-9,
+        use_existing_column=False,
+    )
 
-    @declared_attr.directive
     @classmethod
     def __tablename__(cls: "type[Base]") -> str:
         """
@@ -34,7 +41,10 @@ class User(Base, sessionmaker):
     tickets: Mapped[list["Ticket"]] = relationship("Ticket", back_populates="user", init=False)
 
     def __repr__(self) -> str:
-        return f"User=(id={self.id!s}, first_name={self.first_name!s}, last_name={self.last_name!s}," f"department={self.department!s}, is_priority={self.is_priority!s})"
+        return (
+            f"User=(id={self.id!s}, first_name={self.first_name!s}, last_name={self.last_name!s},"
+            f"department={self.department!s}, is_priority={self.is_priority!s})"
+        )
 
 
 def get_user_by_uid(user_uid: int) -> User | None:
@@ -45,7 +55,11 @@ def get_user_by_uid(user_uid: int) -> User | None:
 async def add_user(user_dict: UserDict) -> User:
     with Session() as session:
         new_user = User(
-            user_uid=user_dict.user_uid, first_name=user_dict.first_name, last_name=user_dict.last_name, department=user_dict.department, is_priority=user_dict.is_priority
+            user_uid=user_dict.user_uid,
+            first_name=user_dict.first_name,
+            last_name=user_dict.last_name,
+            department=user_dict.department,
+            is_priority=user_dict.is_priority,
         )
         session.add(new_user)
         session.commit()
@@ -63,8 +77,10 @@ class Ticket(Base, sessionmaker):
     dates_created: Mapped[datetime] = mapped_column(DateTime, default=datetime.now(tz=timezone.utc))
 
     def __repr__(self) -> str:
-        return f"User(user_id={self.user_uid} title={self.title!r}, description={self.description!r}," \
-               f"status = {self.status})"
+        return (
+            f"User(user_id={self.user_uid} title={self.title!r}, description={self.description!r},"
+            f"status = {self.status})"
+        )
 
     def as_ticket_dict(self) -> TicketDict:
         return TicketDict(user_uid=self.user_uid, title=self.title, description=self.description, status=self.status)
@@ -80,14 +96,19 @@ def list_tickets(uid=0, status: str | None = None) -> Sequence[TicketDict]:
         else:
             select_tickets = select(Ticket).where(Ticket.status.__eq__(status))
 
-        return [TicketDict.model_validate(ticket, from_attributes=True) for ticket in session.execute(select_tickets).all()]
+        return [
+            TicketDict.model_validate(ticket, from_attributes=True) for ticket in session.execute(select_tickets).all()
+        ]
 
 
-def list_ticket_ids(uid: int) -> Sequence[Ticket_ID_Dict]:
+def list_ticket_ids(uid: int) -> Sequence[TicketIdDict]:
     """Получает список словарей с ID тикетов"""
     with Session() as session:
         select_tickets = select(Ticket).where(Ticket.user_uid.__eq__(uid))
-        return [Ticket_ID_Dict.model_validate(ticket, from_attributes=True) for ticket in session.execute(select_tickets).all()]
+        return [
+            TicketIdDict.model_validate(ticket, from_attributes=True)
+            for ticket in session.execute(select_tickets).all()
+        ]
 
 
 def get_ticket_by_id(ticket_id: int) -> Ticket | None:
@@ -100,7 +121,11 @@ def get_ticket_by_id(ticket_id: int) -> Ticket | None:
         return ticket
 
 
-async def edit_ticket_status(ticket_id: int, new_status: status_type, reason: str = "Тикет завершен администратором.") -> None:
+async def edit_ticket_status(
+    ticket_id: int,
+    new_status: status_type,
+    reason: str = "Тикет завершен администратором.",
+) -> None:
     """Редактирует статус тикета в БД по его ID"""
     with Session() as session:
         ticket = session.query(Ticket).filter_by(id=ticket_id).one_or_none()

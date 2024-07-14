@@ -38,7 +38,8 @@ def raw_reply(item: TicketDict) -> Text:
         f"Заголовок: {item.title}",
         f"Описание: {item.description}",
         f"Статус: {item.status}",
-        sep='\n')
+        sep="\n",
+    )
 
 
 def reply_list(item: TicketDict) -> dict:
