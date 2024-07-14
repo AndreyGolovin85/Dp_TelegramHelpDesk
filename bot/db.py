@@ -13,15 +13,7 @@ class Base(MappedAsDataclass, DeclarativeBase, repr=False, unsafe_hash=True, kw_
 
     __abstract__ = True
 
-    id: Mapped[int] = mapped_column(
-        Integer,
-        primary_key=True,
-        index=True,
-        autoincrement=True,
-        init=False,
-        sort_order=-9,
-        use_existing_column=False,
-    )
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True, init=False)
 
 
 class User(Base, sessionmaker):
@@ -92,7 +84,8 @@ def list_tickets(uid=0, status: str | None = None) -> Sequence[TicketDict]:
             select_tickets = select(Ticket).where(Ticket.status.__eq__(status))
 
         return [
-            TicketDict.model_validate(ticket, from_attributes=True) for ticket in session.execute(select_tickets).all()
+            TicketDict.model_validate(ticket, from_attributes=True)
+            for ticket in session.query(select_tickets.subquery()).all()
         ]
 
 
@@ -101,8 +94,8 @@ def list_ticket_ids(uid: int) -> Sequence[TicketDictID]:
     with Session() as session:
         select_tickets = select(Ticket).where(Ticket.user_uid.__eq__(uid))
         return [
-            TicketIdDict.model_validate(ticket, from_attributes=True)
-            for ticket in session.execute(select_tickets).all()
+            TicketDictID.model_validate(ticket, from_attributes=True)
+            for ticket in session.query(select_tickets.subquery()).all()
         ]
 
 
