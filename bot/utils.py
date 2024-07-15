@@ -4,20 +4,21 @@ from custom_types import TicketDict, UserDTO
 from db import User, add_user, get_user_by_uid, list_ticket_ids
 
 
-async def answer_start(message: Message) -> str | None:
+async def answer_register(message: Message) -> str | None:
     user_uid = message.chat.id
     first_name = message.chat.first_name
     last_name = message.chat.last_name
     if not first_name or not last_name:
-        return
-    user_dict = new_user(user_uid, first_name, last_name)
-    user = check_user_registration(user_uid)
-    if not user:
-        add_user(user_dict)
-        answer = "Вы успешно зарегистрировались!"
+        return "У вас не указано имя или фамилия в профиле телеграмма. Пожалуйста, укажите их."
     else:
-        answer = "Вы уже зарегистрированы!"
-    return f"{first_name}, добро пожаловать в бот!\n{answer}"
+        user_dict = new_user(user_uid, first_name, last_name)
+        user = check_user_registration(user_uid)
+        if not user:
+            add_user(user_dict)
+            answer = "Вы успешно зарегистрировались!"
+        else:
+            answer = "Вы уже зарегистрированы!"
+        return f"{first_name}, добро пожаловать в бот!\n{answer}"
 
 
 def check_user_registration(user_uid: int) -> User | None:
