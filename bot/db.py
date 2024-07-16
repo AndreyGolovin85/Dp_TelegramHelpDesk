@@ -136,6 +136,7 @@ def add_ticket(ticket_dict: TicketDict) -> int:
             last_updated=datetime.now(tz=timezone.utc),
             status=ticket_dict.status,
         )
+        print(new_ticket)
         session.add(new_ticket)
         session.commit()
         return new_ticket.id

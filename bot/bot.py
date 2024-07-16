@@ -187,7 +187,7 @@ async def cmd_add_ticket(message: types.Message, command: CommandObject) -> None
         return
 
     if not check_user_registration(message.chat.id) or not message.from_user:
-        await message.answer("Вы не зарегистрированы в боте, введите команду /start.")
+        await message.answer("Вы не зарегистрированы в боте, введите команду /register.")
         return
     ticket_dict = new_ticket(
         command.args,
