@@ -11,7 +11,7 @@ from aiogram.utils.formatting import Text
 from custom_types import UserDTO
 from db import add_ticket, add_user, edit_ticket_status, get_ticket_by_id, list_tickets
 from dotenv import load_dotenv
-from utils import active_tickets, answer_start, check_user_registration, new_ticket, raw_reply, reply_list
+from utils import active_tickets, answer_register, check_user_registration, new_ticket, raw_reply, reply_list
 
 load_dotenv()
 API_TOKEN = os.getenv("API_TOKEN")
@@ -124,9 +124,26 @@ async def admin_to_accept_button(reply_text: Text, ticket_id: int):
     )
 
 
+@dispatcher.message(Command("help"))
+async def cmd_help(message: types.Message):
+    await message.answer("Основные команды для работы:\n"
+                         "/register - команда для регистрации пользователя.\n"
+                         "/new_ticket - команда для создания новой заявки, */new_ticket <опишите тут вашу проблему>*.\n"
+                         "/tickets - команда для проверки ваших заявок.\n"
+                         "/cancel - команда для отмены заявки */cancel <номер тикета для отмены>*.\n"
+                         "/complete - команда для самостоятельного закрытия заявки "
+                         "*/complete <номер тикета для завершения>*.")
+
+
 @dispatcher.message(Command("start"))
-async def cmd_start(message: types.Message) -> None:
-    if not (ans := await answer_start(message)):
+async def cmd_start(message: types.Message):
+    await message.answer("Добро пожаловать в бот!\n Для продолжения пройдите регистрацию /register или воспользуйтесь"
+                         "помощью по командам /help.")
+
+
+@dispatcher.message(Command("register"))
+async def cmd_register(message: types.Message) -> None:
+    if not (ans := await answer_register(message)):
         return
     await message.answer(ans)
 
@@ -245,7 +262,12 @@ async def main():
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(
+        level=logging.INFO,
+        format=u'[%(asctime)s] - %(filename)s:%(lineno)d #%(levelname)-s - %(name)s - %(message)s',
+        filename='bot.log',
+        filemode='w'
+    )
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
