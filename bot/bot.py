@@ -7,7 +7,9 @@ import sys
 from aiogram import Bot, Dispatcher, types
 from aiogram.enums import ParseMode
 from aiogram.filters.command import Command, CommandObject
+from aiogram.types import BotCommand, BotCommandScopeDefault
 from aiogram.utils.formatting import Text
+
 from custom_types import UserDTO
 from db import add_ticket, add_user, edit_ticket_status, get_ticket_by_id, list_tickets
 from dotenv import load_dotenv
@@ -257,7 +259,19 @@ async def cmd_check_authority(message: types.Message) -> None:
     add_user(user_dict)
 
 
+async def set_commands():
+    commands = [BotCommand(command="start", description="Старт"),
+                BotCommand(command="register", description="Команда для регистрации пользователя"),
+                BotCommand(command="new_ticket", description="Команда для создания новой заявки"),
+                BotCommand(command="tickets", description="Команда для проверки ваших заявок"),
+                BotCommand(command="cancel", description="Команда для отмены заявки"),
+                BotCommand(command="complete", description="Команда для самостоятельного закрытия заявки"),
+                BotCommand(command="help", description="Справка по командам")]
+    await bot.set_my_commands(commands, BotCommandScopeDefault())
+
+
 async def main():
+    await set_commands()
     await dispatcher.start_polling(bot, skip_updates=True)
 
 
