@@ -9,7 +9,6 @@ from aiogram.enums import ParseMode
 from aiogram.filters.command import Command, CommandObject
 from aiogram.types import BotCommand, BotCommandScopeDefault
 from aiogram.utils.formatting import Text
-
 from custom_types import UserDTO
 from db import add_ticket, add_user, edit_ticket_status, get_ticket_by_id, list_tickets
 from dotenv import load_dotenv
@@ -28,8 +27,7 @@ dispatcher = Dispatcher()
 
 
 def buttons_keyboard(
-    ticket_id: int,
-    keyboard_type: Literal["accept", "complete"] = "accept",
+    ticket_id: int, keyboard_type: Literal["accept", "complete"] = "accept"
 ) -> types.InlineKeyboardMarkup:
     """
     Формирует клавиатуру в зависимости от нужного варианта.
@@ -128,24 +126,36 @@ async def admin_to_accept_button(reply_text: Text, ticket_id: int):
 
 @dispatcher.message(Command("help"))
 async def cmd_help(message: types.Message):
-    await message.answer("Основные команды для работы:\n"
-                         "/register - команда для регистрации пользователя.\n"
-                         "/new_ticket - команда для создания новой заявки, */new_ticket <опишите тут вашу проблему>*.\n"
-                         "/tickets - команда для проверки ваших заявок.\n"
-                         "/cancel - команда для отмены заявки */cancel <номер тикета для отмены>*.\n"
-                         "/complete - команда для самостоятельного закрытия заявки "
-                         "*/complete <номер тикета для завершения>*.")
+    await message.answer(
+        "Основные команды для работы:\n"
+        "/register - команда для регистрации пользователя.\n"
+        "/new_ticket - команда для создания новой заявки, */new_ticket <опишите тут вашу проблему>*.\n"
+        "/tickets - команда для проверки ваших заявок.\n"
+        "/cancel - команда для отмены заявки */cancel <номер тикета для отмены>*.\n"
+        "/complete - команда для самостоятельного закрытия заявки "
+        "*/complete <номер тикета для завершения>*."
+    )
 
 
 @dispatcher.message(Command("start"))
 async def cmd_start(message: types.Message):
-    await message.answer("Добро пожаловать в бот!\n Для продолжения пройдите регистрацию /register или воспользуйтесь"
-                         "помощью по командам /help.")
+    await message.answer(
+        "Добро пожаловать в бот!\nДля продолжения пройдите регистрацию /register или воспользуйтесь "
+        "помощью по командам /help."
+    )
 
 
 @dispatcher.message(Command("register"))
-async def cmd_register(message: types.Message) -> None:
-    if not (ans := await answer_register(message)):
+async def cmd_register(message: types.Message, command: CommandObject) -> None:
+    if command.args is None:
+        if not (ans := await answer_register(message)):
+            return
+        await message.answer(ans)
+        return
+
+    print(command.args)
+    first_name, last_name = command.args.split()
+    if not (ans := await answer_register(message, first_name, last_name)):
         return
     await message.answer(ans)
 
@@ -189,11 +199,7 @@ async def cmd_add_ticket(message: types.Message, command: CommandObject) -> None
     if not check_user_registration(message.chat.id) or not message.from_user:
         await message.answer("Вы не зарегистрированы в боте, введите команду /register.")
         return
-    ticket_dict = new_ticket(
-        command.args,
-        f"Запрос от {message.from_user.full_name}",
-        message.chat.id,
-    )
+    ticket_dict = new_ticket(command.args, f"Запрос от {message.from_user.full_name}", message.chat.id)
     reply_text = raw_reply(ticket_dict)
     ticket_id = add_ticket(ticket_dict)
     await admin_to_accept_button(reply_text, ticket_id)
@@ -260,13 +266,15 @@ async def cmd_check_authority(message: types.Message) -> None:
 
 
 async def set_commands():
-    commands = [BotCommand(command="start", description="Старт"),
-                BotCommand(command="register", description="Команда для регистрации пользователя"),
-                BotCommand(command="new_ticket", description="Команда для создания новой заявки"),
-                BotCommand(command="tickets", description="Команда для проверки ваших заявок"),
-                BotCommand(command="cancel", description="Команда для отмены заявки"),
-                BotCommand(command="complete", description="Команда для самостоятельного закрытия заявки"),
-                BotCommand(command="help", description="Справка по командам")]
+    commands = [
+        BotCommand(command="start", description="Старт"),
+        BotCommand(command="register", description="Команда для регистрации пользователя"),
+        BotCommand(command="new_ticket", description="Команда для создания новой заявки"),
+        BotCommand(command="tickets", description="Команда для проверки ваших заявок"),
+        BotCommand(command="cancel", description="Команда для отмены заявки"),
+        BotCommand(command="complete", description="Команда для самостоятельного закрытия заявки"),
+        BotCommand(command="help", description="Справка по командам"),
+    ]
     await bot.set_my_commands(commands, BotCommandScopeDefault())
 
 
@@ -278,9 +286,9 @@ async def main():
 if __name__ == "__main__":
     logging.basicConfig(
         level=logging.INFO,
-        format=u'[%(asctime)s] - %(filename)s:%(lineno)d #%(levelname)-s - %(name)s - %(message)s',
-        filename='bot.log',
-        filemode='w'
+        format="[%(asctime)s] - %(filename)s:%(lineno)d #%(levelname)-s - %(name)s - %(message)s",
+        filename="bot.log",
+        filemode="w",
     )
     try:
         asyncio.run(main())
