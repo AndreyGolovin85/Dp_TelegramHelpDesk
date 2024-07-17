@@ -147,15 +147,17 @@ async def cmd_start(message: types.Message):
 
 @dispatcher.message(Command("register"))
 async def cmd_register(message: types.Message, command: CommandObject) -> None:
+    is_admin = False
+    if message.chat.id == ADMIN_ID:
+        is_admin = True
     if command.args is None:
-        if not (ans := await answer_register(message)):
+        if not (ans := await answer_register(message=message, is_admin=is_admin)):
             return
         await message.answer(ans)
         return
 
-    print(command.args)
     first_name, last_name = command.args.split()
-    if not (ans := await answer_register(message, first_name, last_name)):
+    if not (ans := await answer_register(message, first_name, last_name, is_admin)):
         return
     await message.answer(ans)
 
