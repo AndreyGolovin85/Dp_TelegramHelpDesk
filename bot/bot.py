@@ -153,7 +153,16 @@ async def cmd_register(message: types.Message, command: CommandObject) -> None:
     if message.chat.id == ADMIN_ID:
         is_admin = True
     if command.args is None:
-        first_name, last_name = message.chat.first_name, message.chat.last_name
+        if message.chat.first_name and message.chat.last_name:
+            first_name, last_name = message.chat.first_name, message.chat.last_name
+        else:
+            await message.answer(
+                "У вас не указано имя или фамилия в профиле телеграмма "
+                "и вы не указали их в вводе. Пожалуйста, укажите имя и фамилию в команде.\n"
+                "`/register Имя Фамилия`",
+                parse_mode=ParseMode.MARKDOWN,
+            )
+            return
     else:
         first_name, last_name = command.args.split()
     if not (ans := await answer_register(message, first_name, last_name, is_admin)):

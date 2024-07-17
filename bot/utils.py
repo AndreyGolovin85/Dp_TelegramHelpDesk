@@ -6,11 +6,6 @@ from db import User, add_user, get_user_by_uid, list_ticket_ids
 
 async def answer_register(message: Message, first_name: str, last_name: str, is_admin: bool = False) -> str | None:
     user_uid = message.chat.id
-    if not first_name or not last_name:
-        return (
-            "У вас не указано имя или фамилия в профиле телеграмма и вы не указали их при регистрации. "
-            "Пожалуйста, укажите их."
-        )
     if not is_admin:
         user_dict = new_user(user_uid, first_name, last_name)
     else:
