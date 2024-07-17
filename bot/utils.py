@@ -4,13 +4,8 @@ from custom_types import TicketDict, UserDTO
 from db import User, add_user, get_user_by_uid, list_ticket_ids
 
 
-async def answer_register(
-    message: Message, first_name: str | None = None, last_name: str | None = None, is_admin: bool = False
-) -> str | None:
+async def answer_register(message: Message, first_name: str, last_name: str, is_admin: bool = False) -> str | None:
     user_uid = message.chat.id
-    if not first_name and not last_name:
-        first_name = message.chat.first_name
-        last_name = message.chat.last_name
     if not first_name or not last_name:
         return (
             "У вас не указано имя или фамилия в профиле телеграмма и вы не указали их при регистрации. "

@@ -128,12 +128,14 @@ async def admin_to_accept_button(reply_text: Text, ticket_id: int):
 async def cmd_help(message: types.Message):
     await message.answer(
         "Основные команды для работы:\n"
-        "/register - команда для регистрации пользователя.\n"
-        "/new_ticket - команда для создания новой заявки, */new_ticket <опишите тут вашу проблему>*.\n"
+        "/register - команда для регистрации пользователя. При регистрации возможно указать свои имя/фамилию в формате"
+        "`/register Имя Фамилия`\n"
+        "/new_ticket - команда для создания новой заявки, `/new_ticket <опишите тут вашу проблему>`.\n"
         "/tickets - команда для проверки ваших заявок.\n"
-        "/cancel - команда для отмены заявки */cancel <номер тикета для отмены>*.\n"
+        "/cancel - команда для отмены заявки `/cancel <номер тикета для отмены>`.\n"
         "/complete - команда для самостоятельного закрытия заявки "
-        "*/complete <номер тикета для завершения>*."
+        "`/complete <номер тикета для завершения>`.",
+        parse_mode=ParseMode.MARKDOWN,
     )
 
 
@@ -151,12 +153,9 @@ async def cmd_register(message: types.Message, command: CommandObject) -> None:
     if message.chat.id == ADMIN_ID:
         is_admin = True
     if command.args is None:
-        if not (ans := await answer_register(message=message, is_admin=is_admin)):
-            return
-        await message.answer(ans)
-        return
-
-    first_name, last_name = command.args.split()
+        first_name, last_name = message.chat.first_name, message.chat.last_name
+    else:
+        first_name, last_name = command.args.split()
     if not (ans := await answer_register(message, first_name, last_name, is_admin)):
         return
     await message.answer(ans)
