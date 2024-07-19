@@ -128,14 +128,14 @@ async def admin_to_accept_button(reply_text: Text, ticket_id: int):
 async def cmd_help(message: types.Message):
     await message.answer(
         "Основные команды для работы:\n"
-        "/register - команда для регистрации пользователя. При регистрации возможно указать свои имя/фамилию в формате"
-        "`/register Имя Фамилия`\n"
-        "/new_ticket - команда для создания новой заявки, `/new_ticket <опишите тут вашу проблему>`.\n"
+        r"/register - команда для регистрации пользователя. При регистрации возможно указать свои имя/фамилию в формате "
+        "<code>/register Имя Фамилия</code>\n"
+        "/new_ticket - команда для создания новой заявки, <code>/new_ticket (опишите тут вашу проблему)</code>.\n"
         "/tickets - команда для проверки ваших заявок.\n"
-        "/cancel - команда для отмены заявки `/cancel <номер тикета для отмены>`.\n"
-        "/complete - команда для самостоятельного закрытия заявки "
-        "`/complete <номер тикета для завершения>`.",
-        parse_mode=ParseMode.MARKDOWN,
+        "/cancel - команда для отмены заявки <code>/cancel (номер тикета для отмены)</code>.\n"
+        r"/complete - команда для самостоятельного закрытия заявки "
+        r"<code>/complete (номер тикета для завершения)</code>.",
+        parse_mode=ParseMode.HTML,
     )
 
 
