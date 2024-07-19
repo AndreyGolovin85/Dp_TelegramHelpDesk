@@ -1,0 +1,15 @@
+version: "3.9"
+
+services:
+  bot:
+    build:
+      context: .
+    image: andreygolovin5/telegrambot
+    env_file:
+      - .env
+    restart: always
+    command: >
+      sh -c "python bot/bot.py"
+
+volumes:
+  data:
