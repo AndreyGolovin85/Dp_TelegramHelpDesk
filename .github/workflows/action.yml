@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build_and_push
     env:
-      BOT_TOKEN: ${{ secrets.API_TOKEN }}
+      API_TOKEN: ${{ secrets.API_TOKEN }}
       ADMIN_ID: ${{ secrets.ADMIN_ID }}
     steps:
       - name: clone code
