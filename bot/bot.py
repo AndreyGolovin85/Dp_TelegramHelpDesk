@@ -137,7 +137,7 @@ async def admin_to_accept_button(reply_text: Text, ticket_id: int):
 
 @dispatcher.message(Command("help"))
 async def cmd_help(message: types.Message):
-    if check_blocked(message.from_user.id):
+    if check_blocked(message.from_user.id) is True:
         return
     await message.answer(
         "Основные команды для работы:\n"
@@ -189,7 +189,7 @@ async def my_chat_member(message: types.Message) -> None:
 
 @dispatcher.message(Command("register"))
 async def cmd_register(message: types.Message, command: CommandObject) -> None:
-    if check_blocked(message.from_user.id):
+    if check_blocked(message.from_user.id) is True:
         return
     is_admin = False
     if message.chat.id == ADMIN_ID:
@@ -214,7 +214,7 @@ async def cmd_register(message: types.Message, command: CommandObject) -> None:
 
 @dispatcher.message(Command("tickets"))
 async def cmd_tickets(message: types.Message, command: CommandObject) -> None:
-    if check_blocked(message.from_user.id):
+    if check_blocked(message.from_user.id) is True:
         return
     if not check_user_registration(message.chat.id):
         await message.answer("Вы не зарегистрированы.")
@@ -247,7 +247,7 @@ async def cmd_tickets(message: types.Message, command: CommandObject) -> None:
 
 @dispatcher.message(Command("new_ticket"))
 async def cmd_add_ticket(message: types.Message, command: CommandObject) -> None:
-    if check_blocked(message.from_user.id):
+    if check_blocked(message.from_user.id) is True:
         return
     if command.args is None:
         await message.reply(
@@ -269,7 +269,7 @@ async def cmd_add_ticket(message: types.Message, command: CommandObject) -> None
 
 @dispatcher.message(Command("cancel"))
 async def cmd_cancel_ticket(message: types.Message, command: CommandObject) -> None:
-    if check_blocked(message.from_user.id):
+    if check_blocked(message.from_user.id) is True:
         return
     if command.args is None:
         await message.reply(
@@ -291,7 +291,7 @@ async def cmd_cancel_ticket(message: types.Message, command: CommandObject) -> N
 
 @dispatcher.message(Command("complete"))
 async def cmd_complete_ticket(message: types.Message, command: CommandObject) -> None:
-    if check_blocked(message.from_user.id):
+    if check_blocked(message.from_user.id) is True:
         return
     if command.args is None:
         await message.reply(
@@ -313,7 +313,7 @@ async def cmd_complete_ticket(message: types.Message, command: CommandObject) ->
 
 @dispatcher.message(Command("check_admin"))
 async def cmd_check_authority(message: types.Message) -> None:
-    if check_blocked(message.from_user.id):
+    if check_blocked(message.from_user.id) is True:
         return
     if message.chat.id != ADMIN_ID:
         await message.reply("Нет прав администратора.")
