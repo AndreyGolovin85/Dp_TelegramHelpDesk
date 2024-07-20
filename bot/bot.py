@@ -86,7 +86,10 @@ async def send_message_users(callback: types.CallbackQuery):
             chat_id=ticket.user_uid,
             text=f"Ваша заявка: {ticket.id} \nОписание: {ticket.description}\nпринята в работу!",
         )
-        await admin_complete_button(ticket_id)
+        await callback.message.edit_text(
+            f"Заявка {ticket_id} принята в работу. \nОписание заявки: {ticket.description}",
+            reply_markup=buttons_keyboard(ticket_id, "complete"),
+        )
     elif status == "canceled":
         edit_ticket_status(
             ticket.id,
@@ -97,16 +100,14 @@ async def send_message_users(callback: types.CallbackQuery):
             chat_id=ticket.user_uid,
             text=f"Ваша заявка {ticket.id} отменена.",
         )
+        await callback.message.edit_text(f"Заявка {ticket_id} отменена.")
     elif status == "usercancel":
         edit_ticket_status(
             ticket.id,
             "rejected",
             "Заявка отменена пользователем.",
         )
-        await bot.send_message(
-            chat_id=ticket.user_uid,
-            text=f"Вы отменили заявку {ticket.id}.",
-        )
+        await callback.message.edit_text(f"Вы отменили заявку {ticket.id}.")
         await bot.send_message(chat_id=ADMIN_ID, text=f"Заявка {ticket_id} отменена пользователем.")
 
     elif status == "completed":
@@ -115,17 +116,9 @@ async def send_message_users(callback: types.CallbackQuery):
             chat_id=ticket.user_uid,
             text=f"Ваша заявка: {ticket.id} \nОписание: {ticket.description}\nвыполнена!",
         )
-        await bot.send_message(chat_id=ADMIN_ID, text=f"Заявка {ticket_id} завершена.")
+        await callback.message.edit_text(f"Заявка {ticket_id} завершена.")
 
     await callback.answer()
-
-
-async def admin_complete_button(ticket_id: int):
-    await bot.send_message(
-        chat_id=ADMIN_ID,
-        text=f"Заявка {ticket_id} принята в работу!",
-        reply_markup=buttons_keyboard(ticket_id, "complete"),
-    )
 
 
 async def admin_to_accept_button(reply_text: Text, ticket_id: int):
