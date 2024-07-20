@@ -64,6 +64,14 @@ def add_blocked_user(user_uid: int):
         session.commit()
 
 
+def unblock_user(user_uid: int):
+    with Session() as session:
+        blocked_user = session.query(BlockedUser).filter_by(user_uid=user_uid).one_or_none()
+        if blocked_user:
+            session.delete(blocked_user)
+            session.commit()
+
+
 def check_blocked(user_uid: int) -> bool:
     with Session() as session:
         return bool(session.query(BlockedUser).filter_by(user_uid=user_uid).one_or_none())

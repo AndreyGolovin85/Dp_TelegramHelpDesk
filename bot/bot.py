@@ -10,7 +10,7 @@ from aiogram.filters.command import Command, CommandObject
 from aiogram.types import BotCommand, BotCommandScopeDefault
 from aiogram.utils.deep_linking import create_start_link
 from aiogram.utils.formatting import Text
-from db import add_blocked_user, add_ticket, check_blocked, edit_ticket_status, get_ticket_by_id, list_tickets
+from db import add_blocked_user, add_ticket, check_blocked, edit_ticket_status, get_ticket_by_id, list_tickets, unblock_user
 from dotenv import load_dotenv
 from utils import active_tickets, answer_register, check_user_registration, new_ticket, raw_reply, reply_list
 
@@ -175,6 +175,7 @@ async def cmd_start(message: types.Message, command: CommandObject):
         till_block_counter[message.from_user.id] -= 1
     else:
         add_blocked_user(message.from_user.id)
+        await message.answer("Вы были заблокированы. Обратитесь к администратору бота для разблокировки.")
         await bot.send_message(
             chat_id=ADMIN_ID,
             text=f"Пользователь {message.from_user.id} был заблокирован за 5 попыток запуска без ключа.",
@@ -335,6 +336,18 @@ async def cmd_block_user(message: types.Message, command: CommandObject) -> None
     add_blocked_user(int(command.args))
     if check_blocked(int(command.args)):
         await message.answer(f"Пользователь {int(command.args)} заблокирован.")
+
+
+@dispatcher.message(Command("unblock"))
+async def cmd_unblock_user(message: types.Message, command: CommandObject) -> None:
+    if message.chat.id != ADMIN_ID:
+        return
+    if command.args is None:
+        await message.reply("Укажите UID пользователя для разблокировки.")
+    unblock_user(int(command.args))
+    till_block_counter.pop(int(command.args))
+    if not check_blocked(int(command.args)):
+        await message.answer(f"Пользователь {int(command.args)} разблокирован.")
 
 
 async def set_commands():
