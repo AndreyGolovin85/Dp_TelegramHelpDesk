@@ -10,7 +10,16 @@ from aiogram.filters.command import Command, CommandObject
 from aiogram.types import BotCommand, BotCommandScopeDefault
 from aiogram.utils.deep_linking import create_start_link
 from aiogram.utils.formatting import Text
-from db import add_blocked_user, add_ticket, check_blocked, edit_ticket_status, get_ticket_by_id, list_tickets, unblock_user
+from db import (
+    add_blocked_user,
+    add_ticket,
+    all_blocked_users,
+    check_blocked,
+    edit_ticket_status,
+    get_ticket_by_id,
+    list_tickets,
+    unblock_user,
+)
 from dotenv import load_dotenv
 from utils import active_tickets, answer_register, check_user_registration, new_ticket, raw_reply, reply_list
 
@@ -174,7 +183,7 @@ async def cmd_start(message: types.Message, command: CommandObject):
         )
         till_block_counter[message.from_user.id] -= 1
     else:
-        add_blocked_user(message.from_user.id)
+        add_blocked_user(message.from_user.id, message.from_user.full_name)
         await message.answer("Вы были заблокированы. Обратитесь к администратору бота для разблокировки.")
         await bot.send_message(
             chat_id=ADMIN_ID,
@@ -333,7 +342,8 @@ async def cmd_block_user(message: types.Message, command: CommandObject) -> None
         return
     if command.args is None:
         await message.reply("Укажите UID пользователя для блокировки.")
-    add_blocked_user(int(command.args))
+    add_blocked_user(int(command.args), "Added by admin.")
+    await bot.send_message(chat_id=int(command.args), text="Вы были заблокированы администратором бота.")
     if check_blocked(int(command.args)):
         await message.answer(f"Пользователь {int(command.args)} заблокирован.")
 
@@ -344,8 +354,13 @@ async def cmd_unblock_user(message: types.Message, command: CommandObject) -> No
         return
     if command.args is None:
         await message.reply("Укажите UID пользователя для разблокировки.")
+        if blocklist := all_blocked_users():
+            await message.answer("\n".join(blocklist))
+        else:
+            await message.answer("На данный момент нет заблокированных пользователей.")
     unblock_user(int(command.args))
     till_block_counter.pop(int(command.args))
+    await bot.send_message(chat_id=int(command.args), text="Вы были разблокированы администратором бота.")
     if not check_blocked(int(command.args)):
         await message.answer(f"Пользователь {int(command.args)} разблокирован.")
 
