@@ -52,6 +52,23 @@ def add_user(user_dict: UserDTO) -> User:
         return new_user
 
 
+class BlockedUser(Base, sessionmaker):
+    __tablename__ = "blocked_users"
+    user_uid: Mapped[int] = mapped_column(Integer)
+
+
+def add_blocked_user(user_uid: int):
+    with Session() as session:
+        blocked_user = BlockedUser(user_uid=user_uid)
+        session.add(blocked_user)
+        session.commit()
+
+
+def check_blocked(user_uid: int) -> bool:
+    with Session() as session:
+        return bool(session.query(BlockedUser).filter_by(user_uid=user_uid).one_or_none())
+
+
 class Ticket(Base, sessionmaker):
     __tablename__ = "tickets"
     user_uid: Mapped[int] = mapped_column(Integer, ForeignKey("users.user_uid"))

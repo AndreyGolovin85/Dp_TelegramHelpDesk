@@ -2,7 +2,7 @@
 exclude = ["**/__pycache__"]
 
 [tool.ruff]
-line-length = 120
+line-length = 125
 show-fixes = true
 target-version = "py310"
 fix = true
@@ -71,6 +71,7 @@ ignore = [
 	# "B008",   # Do not perform function call `<name>` in argument defaults (false positive on FastAPI)
 	"B905",   # `zip()` without an explicit `strict=` parameter
 	"BLE001", # Do not catch blind exception: `Exception`
+	"C901",
 	"COM812",
 	"D100",    # Missing docstring in public module
 	"D101",
