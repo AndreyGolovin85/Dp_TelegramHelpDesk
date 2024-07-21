@@ -10,6 +10,3 @@ services:
       ACCESS_KEY: $ACCESS_KEY
     command: >
       sh -c "python bot/bot.py"
-
-volumes:
-  data:
