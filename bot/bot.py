@@ -4,19 +4,30 @@ import asyncio
 import os
 import sys
 
-from aiogram import Bot, Dispatcher, types
+from aiogram import Bot, Dispatcher, filters, types
 from aiogram.enums import ParseMode
 from aiogram.filters.command import Command, CommandObject
 from aiogram.types import BotCommand, BotCommandScopeDefault
+from aiogram.utils.deep_linking import create_start_link
 from aiogram.utils.formatting import Text
-from db import add_ticket, edit_ticket_status, get_ticket_by_id, list_tickets
+from db import (
+    add_blocked_user,
+    add_ticket,
+    all_blocked_users,
+    check_blocked,
+    edit_ticket_status,
+    get_ticket_by_id,
+    list_tickets,
+    unblock_user,
+)
 from dotenv import load_dotenv
 from utils import active_tickets, answer_register, check_user_registration, new_ticket, raw_reply, reply_list
 
 load_dotenv()
 API_TOKEN = os.getenv("API_TOKEN")
 _ADMIN_ID = os.getenv("ADMIN_ID")
-if not API_TOKEN or not _ADMIN_ID:
+ACCESS_KEY = os.getenv("ACCESS_KEY")
+if not API_TOKEN or not _ADMIN_ID or not ACCESS_KEY:
     logging.error("Отстутствуют переменные ENV.")
     sys.exit(1)
 
@@ -26,7 +37,7 @@ dispatcher = Dispatcher()
 
 
 def buttons_keyboard(
-    ticket_id: int, keyboard_type: Literal["accept", "complete", "reject"] = "accept"
+    unique_id: int, keyboard_type: Literal["accept", "complete", "reject", "unlock"] = "accept"
 ) -> types.InlineKeyboardMarkup:
     """
     Формирует клавиатуру в зависимости от нужного варианта.
@@ -39,11 +50,11 @@ def buttons_keyboard(
             [
                 types.InlineKeyboardButton(
                     text="Принять заявку",
-                    callback_data=f"ticket_accept_{ticket_id}",
+                    callback_data=f"ticket_accept_{unique_id}",
                 ),
                 types.InlineKeyboardButton(
                     text="Отменить заявку",
-                    callback_data=f"ticket_canceled_{ticket_id}",
+                    callback_data=f"ticket_canceled_{unique_id}",
                 ),
             ],
         ]
@@ -52,11 +63,21 @@ def buttons_keyboard(
             [
                 types.InlineKeyboardButton(
                     text="Отменить заявку",
-                    callback_data=f"ticket_canceled_{ticket_id}",
+                    callback_data=f"ticket_canceled_{unique_id}",
                 ),
                 types.InlineKeyboardButton(
                     text="Закрыть заявку",
-                    callback_data=f"ticket_completed_{ticket_id}",
+                    callback_data=f"ticket_completed_{unique_id}",
+                ),
+            ],
+        ]
+
+    elif keyboard_type == "reject":
+        buttons = [
+            [
+                types.InlineKeyboardButton(
+                    text="Отменить заявку",
+                    callback_data=f"ticket_usercancel_{unique_id}",
                 ),
             ],
         ]
@@ -64,12 +85,27 @@ def buttons_keyboard(
         buttons = [
             [
                 types.InlineKeyboardButton(
-                    text="Отменить заявку",
-                    callback_data=f"ticket_usercancel_{ticket_id}",
-                ),
-            ],
+                    text="Разблокировать пользователя.",
+                    callback_data=f"user_unlock_{unique_id}",
+                )
+            ]
         ]
     return types.InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
+async def generate_start_link(our_bot: Bot):
+    return await create_start_link(our_bot, ACCESS_KEY)
+
+
+@dispatcher.callback_query(lambda call: call.data.startswith("user_"))
+async def manage_users(callback: types.CallbackQuery):
+    if not callback.data:
+        return
+    _, action, uid = callback.data.split("_")
+    if action == "unlock":
+        unblock_user(uid)
+        await callback.message.edit_text(f"Пользователь {uid} разблокирован.")
+    await callback.answer()
 
 
 @dispatcher.callback_query(lambda call: call.data.startswith("ticket_"))
@@ -131,6 +167,8 @@ async def admin_to_accept_button(reply_text: Text, ticket_id: int):
 
 @dispatcher.message(Command("help"))
 async def cmd_help(message: types.Message):
+    if check_blocked(message.from_user.id) is True:
+        return
     await message.answer(
         "Основные команды для работы:\n"
         "/register - команда для регистрации пользователя. При регистрации возможно указать свои имя/фамилию в формате"
@@ -144,16 +182,47 @@ async def cmd_help(message: types.Message):
     )
 
 
+till_block_counter = {}
+
+
 @dispatcher.message(Command("start"))
-async def cmd_start(message: types.Message):
-    await message.answer(
-        "Добро пожаловать в бот!\nДля продолжения пройдите регистрацию /register или воспользуйтесь "
-        "помощью по командам /help."
-    )
+async def cmd_start(message: types.Message, command: CommandObject):
+    if check_blocked(message.from_user.id) is True:
+        return
+    if command.args == ACCESS_KEY:
+        await message.answer(
+            "Добро пожаловать в бот!\nДля продолжения пройдите регистрацию /register или воспользуйтесь "
+            "помощью по командам /help."
+        )
+        return
+    if message.chat.id not in till_block_counter:
+        till_block_counter[message.from_user.id] = 5
+    if till_block_counter[message.from_user.id] > 0:
+        await message.answer(
+            f"Вы не предоставили ключ доступа к боту или ваш ключ неверен. "
+            f"У вас осталось {till_block_counter[message.from_user.id]} попыток до блокировки."
+        )
+        till_block_counter[message.from_user.id] -= 1
+    else:
+        add_blocked_user(message.from_user.id, message.from_user.username)
+        await message.answer("Вы были заблокированы. Обратитесь к администратору бота для разблокировки.")
+        await bot.send_message(
+            chat_id=ADMIN_ID,
+            text=f"Пользователь {message.from_user.id} был заблокирован за 5 попыток запуска без ключа.",
+            reply_markup=buttons_keyboard(message.from_user.id, "unlock"),
+        )
+
+
+@dispatcher.my_chat_member(filters.ChatMemberUpdatedFilter(member_status_changed=filters.JOIN_TRANSITION))
+async def my_chat_member(message: types.Message) -> None:
+    await message.answer("Я не работаю в группах.")
+    await bot.leave_chat(message.chat.id)
 
 
 @dispatcher.message(Command("register"))
 async def cmd_register(message: types.Message, command: CommandObject) -> None:
+    if check_blocked(message.from_user.id) is True:
+        return
     is_admin = False
     if message.chat.id == ADMIN_ID:
         is_admin = True
@@ -190,6 +259,12 @@ async def cmd_register(message: types.Message, command: CommandObject) -> None:
 
 @dispatcher.message(Command("tickets"))
 async def cmd_tickets(message: types.Message, command: CommandObject) -> None:
+    if check_blocked(message.from_user.id) is True:
+        return
+    if not check_user_registration(message.chat.id):
+        await message.answer("Вы не зарегистрированы.")
+        return
+
     if message.chat.id != ADMIN_ID:
         if command.args is not None:
             await message.answer("! Не пишите лишние аргументы !")
@@ -217,6 +292,8 @@ async def cmd_tickets(message: types.Message, command: CommandObject) -> None:
 
 @dispatcher.message(Command("new_ticket"))
 async def cmd_add_ticket(message: types.Message, command: CommandObject) -> None:
+    if check_blocked(message.from_user.id) is True:
+        return
     if command.args is None:
         await message.reply(
             "Правильный вызов данной команды: */new_ticket <опишите тут вашу проблему>*",
@@ -237,6 +314,8 @@ async def cmd_add_ticket(message: types.Message, command: CommandObject) -> None
 
 @dispatcher.message(Command("cancel"))
 async def cmd_cancel_ticket(message: types.Message, command: CommandObject) -> None:
+    if check_blocked(message.from_user.id) is True:
+        return
     if command.args is None:
         await message.reply(
             "Правильный вызов данной команды: */cancel <номер тикета для отмены>*."
@@ -257,6 +336,8 @@ async def cmd_cancel_ticket(message: types.Message, command: CommandObject) -> N
 
 @dispatcher.message(Command("complete"))
 async def cmd_complete_ticket(message: types.Message, command: CommandObject) -> None:
+    if check_blocked(message.from_user.id) is True:
+        return
     if command.args is None:
         await message.reply(
             "Правильный вызов данной команды: */complete <номер тикета для завершения>*"
@@ -277,6 +358,8 @@ async def cmd_complete_ticket(message: types.Message, command: CommandObject) ->
 
 @dispatcher.message(Command("check_admin"))
 async def cmd_check_authority(message: types.Message) -> None:
+    if check_blocked(message.from_user.id) is True:
+        return
     if message.chat.id != ADMIN_ID:
         await message.reply("Нет прав администратора.")
         return
@@ -286,6 +369,36 @@ async def cmd_check_authority(message: types.Message) -> None:
     if check_user_registration(message.chat.id) or not message.chat.first_name or not message.chat.last_name:
         return
     await answer_register(message, message.chat.first_name, message.chat.last_name, "Admin", True)
+
+
+@dispatcher.message(Command("block"))
+async def cmd_block_user(message: types.Message, command: CommandObject) -> None:
+    if message.chat.id != ADMIN_ID:
+        return
+    if command.args is None:
+        await message.reply("Укажите UID пользователя для блокировки.")
+    add_blocked_user(int(command.args), "Added by admin.")
+    await bot.send_message(chat_id=int(command.args), text="Вы были заблокированы администратором бота.")
+    if check_blocked(int(command.args)):
+        await message.answer(f"Пользователь {int(command.args)} заблокирован.")
+
+
+@dispatcher.message(Command("unblock"))
+async def cmd_unblock_user(message: types.Message, command: CommandObject) -> None:
+    if message.chat.id != ADMIN_ID:
+        return
+    if command.args is None:
+        await message.reply("Укажите UID пользователя для разблокировки.")
+        if blocklist := all_blocked_users():
+            for user in blocklist:
+                await message.answer(f"{user[0]}: {user[1]}", reply_markup=buttons_keyboard(user[0], "unlock"))
+        else:
+            await message.answer("На данный момент нет заблокированных пользователей.")
+    unblock_user(int(command.args))
+    till_block_counter.pop(int(command.args))
+    await bot.send_message(chat_id=int(command.args), text="Вы были разблокированы администратором бота.")
+    if not check_blocked(int(command.args)):
+        await message.answer(f"Пользователь {int(command.args)} разблокирован.")
 
 
 async def set_commands():
@@ -303,6 +416,10 @@ async def set_commands():
 
 async def main():
     await set_commands()
+    await bot.send_message(
+        chat_id=ADMIN_ID,
+        text=f"Бот запущен, приглашение работает по ссылке {await generate_start_link(bot)}",
+    )
     await dispatcher.start_polling(bot, skip_updates=True)
 
 
