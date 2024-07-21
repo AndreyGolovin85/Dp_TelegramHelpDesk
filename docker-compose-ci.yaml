@@ -8,5 +8,4 @@ services:
       API_TOKEN: $API_TOKEN
       ADMIN_ID: $ADMIN_ID
       ACCESS_KEY: $ACCESS_KEY
-    command: >
-      sh -c "python bot/bot.py"
+    command: python bot/bot.py
