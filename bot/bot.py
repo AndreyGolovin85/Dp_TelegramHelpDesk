@@ -9,8 +9,7 @@ from aiogram.enums import ParseMode
 from aiogram.filters.command import Command, CommandObject
 from aiogram.types import BotCommand, BotCommandScopeDefault
 from aiogram.utils.formatting import Text
-from custom_types import UserDTO
-from db import add_ticket, add_user, edit_ticket_status, get_ticket_by_id, list_tickets
+from db import add_ticket, edit_ticket_status, get_ticket_by_id, list_tickets
 from dotenv import load_dotenv
 from utils import active_tickets, answer_register, check_user_registration, new_ticket, raw_reply, reply_list
 
@@ -27,7 +26,7 @@ dispatcher = Dispatcher()
 
 
 def buttons_keyboard(
-    ticket_id: int, keyboard_type: Literal["accept", "complete"] = "accept"
+    ticket_id: int, keyboard_type: Literal["accept", "complete", "reject"] = "accept"
 ) -> types.InlineKeyboardMarkup:
     """
     Формирует клавиатуру в зависимости от нужного варианта.
@@ -61,12 +60,12 @@ def buttons_keyboard(
                 ),
             ],
         ]
-    else:  # Как заготовка, на случай если захочется повозиться и добавить кнопку отмены под каждый тикет в выводе.
+    else:
         buttons = [
             [
                 types.InlineKeyboardButton(
                     text="Отменить заявку",
-                    callback_data=f"ticket_canceled_{ticket_id}",
+                    callback_data=f"ticket_usercancel_{ticket_id}",
                 ),
             ],
         ]
@@ -87,7 +86,10 @@ async def send_message_users(callback: types.CallbackQuery):
             chat_id=ticket.user_uid,
             text=f"Ваша заявка: {ticket.id} \nОписание: {ticket.description}\nпринята в работу!",
         )
-        await admin_complete_button(ticket_id)
+        await callback.message.edit_text(
+            f"Заявка {ticket_id} принята в работу. \nОписание заявки: {ticket.description}",
+            reply_markup=buttons_keyboard(ticket_id, "complete"),
+        )
     elif status == "canceled":
         edit_ticket_status(
             ticket.id,
@@ -98,22 +100,25 @@ async def send_message_users(callback: types.CallbackQuery):
             chat_id=ticket.user_uid,
             text=f"Ваша заявка {ticket.id} отменена.",
         )
+        await callback.message.edit_text(f"Заявка {ticket_id} отменена.")
+    elif status == "usercancel":
+        edit_ticket_status(
+            ticket.id,
+            "rejected",
+            "Заявка отменена пользователем.",
+        )
+        await callback.message.edit_text(f"Вы отменили заявку {ticket.id}.")
+        await bot.send_message(chat_id=ADMIN_ID, text=f"Заявка {ticket_id} отменена пользователем.")
+
     elif status == "completed":
         edit_ticket_status(ticket.id, "completed")
         await bot.send_message(
             chat_id=ticket.user_uid,
             text=f"Ваша заявка: {ticket.id} \nОписание: {ticket.description}\nвыполнена!",
         )
+        await callback.message.edit_text(f"Заявка {ticket_id} завершена.")
 
     await callback.answer()
-
-
-async def admin_complete_button(ticket_id: int):
-    await bot.send_message(
-        chat_id=ADMIN_ID,
-        text=f"Заявка {ticket_id} принята в работу!",
-        reply_markup=buttons_keyboard(ticket_id, "complete"),
-    )
 
 
 async def admin_to_accept_button(reply_text: Text, ticket_id: int):
@@ -129,13 +134,13 @@ async def cmd_help(message: types.Message):
     await message.answer(
         "Основные команды для работы:\n"
         "/register - команда для регистрации пользователя. При регистрации возможно указать свои имя/фамилию в формате"
-        "`/register Имя Фамилия`\n"
-        "/new_ticket - команда для создания новой заявки, `/new_ticket <опишите тут вашу проблему>`.\n"
+        "\n<pre>/register Имя Фамилия\nВаш отдел</pre>\n"
+        "/new_ticket - команда для создания новой заявки, <code>/new_ticket (опишите тут вашу проблему)</code>.\n"
         "/tickets - команда для проверки ваших заявок.\n"
-        "/cancel - команда для отмены заявки `/cancel <номер тикета для отмены>`.\n"
+        "/cancel - команда для отмены заявки <code>/cancel (номер тикета для отмены)</code>.\n"
         "/complete - команда для самостоятельного закрытия заявки "
-        "`/complete <номер тикета для завершения>`.",
-        parse_mode=ParseMode.MARKDOWN,
+        "<code>/complete (номер тикета для завершения)</code>.",
+        parse_mode=ParseMode.HTML,
     )
 
 
@@ -152,20 +157,33 @@ async def cmd_register(message: types.Message, command: CommandObject) -> None:
     is_admin = False
     if message.chat.id == ADMIN_ID:
         is_admin = True
-    if command.args is None:
-        if message.chat.first_name and message.chat.last_name:
-            first_name, last_name = message.chat.first_name, message.chat.last_name
-        else:
+    if not command.args:
+        await message.answer(
+            "Правильное использование команды:\n"
+            "<pre>/register Имя Фамилия\nВаш отдел (обязательно с новой строки!)</pre>"
+            "\nВвод имени и фамилии не обязательны, если они указаны в вашем профиле Telegram, "
+            "в таком случае команду писать так:\n"
+            "<pre>/register Ваш отдел</pre>",
+            parse_mode=ParseMode.HTML,
+        )
+        return
+    if len(command.args.splitlines()) == 2:
+        first_name, last_name = command.args.splitlines()[0].split()
+        department = command.args.splitlines()[1]
+    elif len(command.args.splitlines()) == 1:
+        if not message.from_user.first_name and not message.from_user.last_name:
             await message.answer(
                 "У вас не указано имя или фамилия в профиле телеграмма "
                 "и вы не указали их в вводе. Пожалуйста, укажите имя и фамилию в команде.\n"
-                "`/register Имя Фамилия`",
-                parse_mode=ParseMode.MARKDOWN,
+                "<pre>/register Имя Фамилия\nВаш отдел (обязательно с новой строки!)</pre>",
+                parse_mode=ParseMode.HTML,
             )
             return
+        first_name, last_name = message.from_user.first_name, message.from_user.last_name
+        department = command.args
     else:
-        first_name, last_name = command.args.split()
-    if not (ans := await answer_register(message, first_name, last_name, is_admin)):
+        return
+    if not (ans := await answer_register(message, first_name, last_name, department, is_admin)):
         return
     await message.answer(ans)
 
@@ -214,7 +232,7 @@ async def cmd_add_ticket(message: types.Message, command: CommandObject) -> None
     ticket_id = add_ticket(ticket_dict)
     await admin_to_accept_button(reply_text, ticket_id)
     if message.chat.id != ADMIN_ID:
-        await message.reply(**reply_text.as_kwargs())
+        await message.reply(**reply_text.as_kwargs(), reply_markup=buttons_keyboard(ticket_id, "reject"))
 
 
 @dispatcher.message(Command("cancel"))
@@ -234,6 +252,7 @@ async def cmd_cancel_ticket(message: types.Message, command: CommandObject) -> N
         return
     edit_ticket_status(ticket_id, "rejected", "Заявка отменена пользователем.")
     await message.reply(f"Ваш тикет под номером {ticket_id} успешно отменен.")
+    await bot.send_message(chat_id=ADMIN_ID, text=f"Заявка {ticket_id} отменена пользователем.")
 
 
 @dispatcher.message(Command("complete"))
@@ -253,6 +272,7 @@ async def cmd_complete_ticket(message: types.Message, command: CommandObject) ->
         return
     edit_ticket_status(ticket_id, "completed", "Заявка завершена пользователем.")
     await message.reply(f"Ваш тикет под номером {ticket_id} успешно завершен.")
+    await bot.send_message(chat_id=ADMIN_ID, text=f"Заявка {ticket_id} завершена пользователем.")
 
 
 @dispatcher.message(Command("check_admin"))
@@ -265,14 +285,7 @@ async def cmd_check_authority(message: types.Message) -> None:
     # Регистрация администратора в таблице Users если он не записан в базе.
     if check_user_registration(message.chat.id) or not message.chat.first_name or not message.chat.last_name:
         return
-    user_dict = UserDTO(
-        user_uid=message.chat.id,
-        first_name=message.chat.first_name,
-        last_name=message.chat.last_name,
-        department="Admin",
-        is_priority=99,
-    )
-    add_user(user_dict)
+    await answer_register(message, message.chat.first_name, message.chat.last_name, "Admin", True)
 
 
 async def set_commands():
