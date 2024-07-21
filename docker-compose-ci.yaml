@@ -1,0 +1,14 @@
+version: "3.9"
+
+services:
+  bot:
+    image: andreygolovin5/telegrambot:$GITHUB_REF_NAME-$GITHUB_RUN_ID
+    restart: always
+    environment:
+      API_TOKEN: $API_TOKEN
+      ADMIN_ID: $ADMIN_ID
+    command: >
+      sh -c "python bot/bot.py"
+
+volumes:
+  data:
