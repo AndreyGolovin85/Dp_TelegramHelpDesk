@@ -60,7 +60,7 @@ def buttons_keyboard(
                 ),
             ],
         ]
-    else:  # Как заготовка, на случай если захочется повозиться и добавить кнопку отмены под каждый тикет в выводе.
+    else:
         buttons = [
             [
                 types.InlineKeyboardButton(
@@ -134,7 +134,7 @@ async def cmd_help(message: types.Message):
     await message.answer(
         "Основные команды для работы:\n"
         "/register - команда для регистрации пользователя. При регистрации возможно указать свои имя/фамилию в формате"
-        "<code>/register Имя Фамилия</code>\n"
+        "\n<code>/register Имя Фамилия\nВаш отдел</code>\n"
         "/new_ticket - команда для создания новой заявки, <code>/new_ticket (опишите тут вашу проблему)</code>.\n"
         "/tickets - команда для проверки ваших заявок.\n"
         "/cancel - команда для отмены заявки <code>/cancel (номер тикета для отмены)</code>.\n"
@@ -158,19 +158,31 @@ async def cmd_register(message: types.Message, command: CommandObject) -> None:
     if message.chat.id == ADMIN_ID:
         is_admin = True
     if command.args is None:
-        if message.chat.first_name and message.chat.last_name:
-            first_name, last_name = message.chat.first_name, message.chat.last_name
-        else:
-            await message.answer(
-                "У вас не указано имя или фамилия в профиле телеграмма "
-                "и вы не указали их в вводе. Пожалуйста, укажите имя и фамилию в команде.\n"
-                "<code>/register Имя Фамилия</code>",
-                parse_mode=ParseMode.HTML,
-            )
-            return
-    else:
+        await message.answer(
+            "Правильное использование команды:\n"
+            "<code>/register Имя Фамилия\nВаш отдел (обязательно с новой строки!)</code>"
+            "\nВвод имени и фамилии не обязательны, если они указаны в вашем профиле Telegram, "
+            "в таком случае команду писать так:"
+            "<code>/register \nВаш отдел (обязательно с новой строки!)</code>",
+            parse_mode=ParseMode.HTML,
+        )
+        return
+    if command.args.splitlines()[0]:
         first_name, last_name = command.args.split()
-    if not (ans := await answer_register(message, first_name, last_name, is_admin)):
+    elif message.from_user.first_name and message.from_user.last_name:
+        first_name, last_name = message.from_user.first_name, message.from_user.last_name
+    else:
+        await message.answer(
+            "У вас не указано имя или фамилия в профиле телеграмма "
+            "и вы не указали их в вводе. Пожалуйста, укажите имя и фамилию в команде.\n"
+            "<code>/register Имя Фамилия\nВаш отдел (обязательно с новой строки!)</code>",
+            parse_mode=ParseMode.HTML,
+        )
+        return
+    if not (department := command.args.splitlines()[1]):
+        await message.answer("Укажите ваш отдел в вводе команды.")
+        return
+    if not (ans := await answer_register(message, first_name, last_name, department, is_admin)):
         return
     await message.answer(ans)
 
@@ -272,7 +284,7 @@ async def cmd_check_authority(message: types.Message) -> None:
     # Регистрация администратора в таблице Users если он не записан в базе.
     if check_user_registration(message.chat.id) or not message.chat.first_name or not message.chat.last_name:
         return
-    await answer_register(message, message.chat.first_name, message.chat.last_name, is_admin=True)
+    await answer_register(message, message.chat.first_name, message.chat.last_name, "Admin", True)
 
 
 async def set_commands():
