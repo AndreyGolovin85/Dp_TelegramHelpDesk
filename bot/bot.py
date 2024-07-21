@@ -157,30 +157,31 @@ async def cmd_register(message: types.Message, command: CommandObject) -> None:
     is_admin = False
     if message.chat.id == ADMIN_ID:
         is_admin = True
-    if command.args is None:
+    if not command.args:
         await message.answer(
             "Правильное использование команды:\n"
             "<pre>/register Имя Фамилия\nВаш отдел (обязательно с новой строки!)</pre>"
             "\nВвод имени и фамилии не обязательны, если они указаны в вашем профиле Telegram, "
             "в таком случае команду писать так:\n"
-            "<pre>/register \nВаш отдел (обязательно с новой строки!)</pre>",
+            "<pre>/register Ваш отдел</pre>",
             parse_mode=ParseMode.HTML,
         )
         return
-    if command.args.splitlines()[0]:
-        first_name, last_name = command.args.split()
-    elif message.from_user.first_name and message.from_user.last_name:
+    if len(command.args.splitlines()) == 2:
+        first_name, last_name = command.args.splitlines()[0].split()
+        department = command.args.splitlines()[1]
+    elif len(command.args.splitlines()) == 1:
+        if not message.from_user.first_name and not message.from_user.last_name:
+            await message.answer(
+                "У вас не указано имя или фамилия в профиле телеграмма "
+                "и вы не указали их в вводе. Пожалуйста, укажите имя и фамилию в команде.\n"
+                "<pre>/register Имя Фамилия\nВаш отдел (обязательно с новой строки!)</pre>",
+                parse_mode=ParseMode.HTML,
+            )
+            return
         first_name, last_name = message.from_user.first_name, message.from_user.last_name
+        department = command.args
     else:
-        await message.answer(
-            "У вас не указано имя или фамилия в профиле телеграмма "
-            "и вы не указали их в вводе. Пожалуйста, укажите имя и фамилию в команде.\n"
-            "<pre>/register Имя Фамилия\nВаш отдел (обязательно с новой строки!)</pre>",
-            parse_mode=ParseMode.HTML,
-        )
-        return
-    if not (department := command.args.splitlines()[1]):
-        await message.answer("Укажите ваш отдел в вводе команды.")
         return
     if not (ans := await answer_register(message, first_name, last_name, department, is_admin)):
         return
