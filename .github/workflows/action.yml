@@ -21,6 +21,7 @@ jobs:
     env:
       API_TOKEN: ${{ secrets.API_TOKEN }}
       ADMIN_ID: ${{ secrets.ADMIN_ID }}
+      ACCESS_KEY: ${{ secrets.ACCESS_KEY }}
     steps:
       - name: clone code
         uses: actions/checkout@v2
