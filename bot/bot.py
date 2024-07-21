@@ -178,7 +178,7 @@ async def cmd_start(message: types.Message, command: CommandObject):
         till_block_counter[message.from_user.id] = 5
     if till_block_counter[message.from_user.id] > 0:
         await message.answer(
-            f"Вы не предоставили ключ доступа к боту. "
+            f"Вы не предоставили ключ доступа к боту или ваш ключ неверен. "
             f"У вас осталось {till_block_counter[message.from_user.id]} попыток до блокировки."
         )
         till_block_counter[message.from_user.id] -= 1
