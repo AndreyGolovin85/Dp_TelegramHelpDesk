@@ -80,7 +80,7 @@ def check_blocked(user_uid: int) -> bool:
 
 def all_blocked_users():
     with Session() as session:
-        return [f"{user.username}: {user.user_uid}" for user in session.query(BlockedUser).all()]
+        return [[user.user_uid, user.username] for user in session.query(BlockedUser).all()]
 
 
 class Ticket(Base, sessionmaker):

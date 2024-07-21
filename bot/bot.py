@@ -37,7 +37,7 @@ dispatcher = Dispatcher()
 
 
 def buttons_keyboard(
-    ticket_id: int, keyboard_type: Literal["accept", "complete", "reject"] = "accept"
+    unique_id: int, keyboard_type: Literal["accept", "complete", "reject", "unlock"] = "accept"
 ) -> types.InlineKeyboardMarkup:
     """
     Формирует клавиатуру в зависимости от нужного варианта.
@@ -50,11 +50,11 @@ def buttons_keyboard(
             [
                 types.InlineKeyboardButton(
                     text="Принять заявку",
-                    callback_data=f"ticket_accept_{ticket_id}",
+                    callback_data=f"ticket_accept_{unique_id}",
                 ),
                 types.InlineKeyboardButton(
                     text="Отменить заявку",
-                    callback_data=f"ticket_canceled_{ticket_id}",
+                    callback_data=f"ticket_canceled_{unique_id}",
                 ),
             ],
         ]
@@ -63,11 +63,20 @@ def buttons_keyboard(
             [
                 types.InlineKeyboardButton(
                     text="Отменить заявку",
-                    callback_data=f"ticket_canceled_{ticket_id}",
+                    callback_data=f"ticket_canceled_{unique_id}",
                 ),
                 types.InlineKeyboardButton(
                     text="Закрыть заявку",
-                    callback_data=f"ticket_completed_{ticket_id}",
+                    callback_data=f"ticket_completed_{unique_id}",
+                ),
+            ],
+        ]
+    elif keyboard_type == "reject":
+        buttons = [
+            [
+                types.InlineKeyboardButton(
+                    text="Отменить заявку",
+                    callback_data=f"ticket_usercancel_{unique_id}",
                 ),
             ],
         ]
@@ -75,16 +84,27 @@ def buttons_keyboard(
         buttons = [
             [
                 types.InlineKeyboardButton(
-                    text="Отменить заявку",
-                    callback_data=f"ticket_usercancel_{ticket_id}",
-                ),
-            ],
+                    text="Разблокировать пользователя.",
+                    callback_data=f"user_unlock_{unique_id}",
+                )
+            ]
         ]
     return types.InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
 async def generate_start_link(our_bot: Bot):
     return await create_start_link(our_bot, ACCESS_KEY)
+
+
+@dispatcher.callback_query(lambda call: call.data.startswith("user_"))
+async def manage_users(callback: types.CallbackQuery):
+    if not callback.data:
+        return
+    _, action, uid = callback.data.split("_")
+    if action == "unlock":
+        unblock_user(uid)
+        await callback.message.edit_text(f"Пользователь {uid} разблокирован.")
+    await callback.answer()
 
 
 @dispatcher.callback_query(lambda call: call.data.startswith("ticket_"))
@@ -188,6 +208,7 @@ async def cmd_start(message: types.Message, command: CommandObject):
         await bot.send_message(
             chat_id=ADMIN_ID,
             text=f"Пользователь {message.from_user.id} был заблокирован за 5 попыток запуска без ключа.",
+            reply_markup=buttons_keyboard(message.from_user.id, "unlock"),
         )
 
 
@@ -355,7 +376,8 @@ async def cmd_unblock_user(message: types.Message, command: CommandObject) -> No
     if command.args is None:
         await message.reply("Укажите UID пользователя для разблокировки.")
         if blocklist := all_blocked_users():
-            await message.answer("\n".join(blocklist))
+            for user in blocklist:
+                await message.answer(f"{user[0]}: {user[1]}", reply_markup=buttons_keyboard(user[0], "unlock"))
         else:
             await message.answer("На данный момент нет заблокированных пользователей.")
     unblock_user(int(command.args))
