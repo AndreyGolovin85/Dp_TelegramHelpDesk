@@ -134,7 +134,7 @@ async def cmd_help(message: types.Message):
     await message.answer(
         "Основные команды для работы:\n"
         "/register - команда для регистрации пользователя. При регистрации возможно указать свои имя/фамилию в формате"
-        "\n<code>/register Имя Фамилия\nВаш отдел</code>\n"
+        "\n<pre>/register Имя Фамилия\nВаш отдел</pre>\n"
         "/new_ticket - команда для создания новой заявки, <code>/new_ticket (опишите тут вашу проблему)</code>.\n"
         "/tickets - команда для проверки ваших заявок.\n"
         "/cancel - команда для отмены заявки <code>/cancel (номер тикета для отмены)</code>.\n"
@@ -160,10 +160,10 @@ async def cmd_register(message: types.Message, command: CommandObject) -> None:
     if command.args is None:
         await message.answer(
             "Правильное использование команды:\n"
-            "<code>/register Имя Фамилия\nВаш отдел (обязательно с новой строки!)</code>"
+            "<pre>/register Имя Фамилия\nВаш отдел (обязательно с новой строки!)</pre>"
             "\nВвод имени и фамилии не обязательны, если они указаны в вашем профиле Telegram, "
-            "в таком случае команду писать так:"
-            "<code>/register \nВаш отдел (обязательно с новой строки!)</code>",
+            "в таком случае команду писать так:\n"
+            "<pre>/register \nВаш отдел (обязательно с новой строки!)</pre>",
             parse_mode=ParseMode.HTML,
         )
         return
@@ -175,7 +175,7 @@ async def cmd_register(message: types.Message, command: CommandObject) -> None:
         await message.answer(
             "У вас не указано имя или фамилия в профиле телеграмма "
             "и вы не указали их в вводе. Пожалуйста, укажите имя и фамилию в команде.\n"
-            "<code>/register Имя Фамилия\nВаш отдел (обязательно с новой строки!)</code>",
+            "<pre>/register Имя Фамилия\nВаш отдел (обязательно с новой строки!)</pre>",
             parse_mode=ParseMode.HTML,
         )
         return
