@@ -55,12 +55,12 @@ def add_user(user_dict: UserDTO) -> User:
 class BlockedUser(Base, sessionmaker):
     __tablename__ = "blocked_users"
     user_uid: Mapped[int] = mapped_column(Integer)
-    full_name: Mapped[str] = mapped_column(String)
+    username: Mapped[str] = mapped_column(String)
 
 
 def add_blocked_user(uid: int, user_name: str):
     with Session() as session:
-        blocked_user = BlockedUser(user_uid=uid, full_name=user_name)
+        blocked_user = BlockedUser(user_uid=uid, username=user_name)
         session.add(blocked_user)
         session.commit()
 
@@ -80,7 +80,7 @@ def check_blocked(user_uid: int) -> bool:
 
 def all_blocked_users():
     with Session() as session:
-        return [f"{user.full_name}: {user.user_uid}" for user in session.query(BlockedUser).all()]
+        return [f"{user.username}: {user.user_uid}" for user in session.query(BlockedUser).all()]
 
 
 class Ticket(Base, sessionmaker):

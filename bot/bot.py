@@ -71,7 +71,7 @@ def buttons_keyboard(
                 ),
             ],
         ]
-    else:  # Как заготовка, на случай если захочется повозиться и добавить кнопку отмены под каждый тикет в выводе.
+    else:
         buttons = [
             [
                 types.InlineKeyboardButton(
@@ -183,7 +183,7 @@ async def cmd_start(message: types.Message, command: CommandObject):
         )
         till_block_counter[message.from_user.id] -= 1
     else:
-        add_blocked_user(message.from_user.id, message.from_user.full_name)
+        add_blocked_user(message.from_user.id, message.from_user.username)
         await message.answer("Вы были заблокированы. Обратитесь к администратору бота для разблокировки.")
         await bot.send_message(
             chat_id=ADMIN_ID,
