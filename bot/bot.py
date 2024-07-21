@@ -71,6 +71,7 @@ def buttons_keyboard(
                 ),
             ],
         ]
+
     elif keyboard_type == "reject":
         buttons = [
             [
@@ -171,7 +172,7 @@ async def cmd_help(message: types.Message):
     await message.answer(
         "Основные команды для работы:\n"
         "/register - команда для регистрации пользователя. При регистрации возможно указать свои имя/фамилию в формате"
-        "<code>/register Имя Фамилия</code>\n"
+        "\n<pre>/register Имя Фамилия\nВаш отдел</pre>\n"
         "/new_ticket - команда для создания новой заявки, <code>/new_ticket (опишите тут вашу проблему)</code>.\n"
         "/tickets - команда для проверки ваших заявок.\n"
         "/cancel - команда для отмены заявки <code>/cancel (номер тикета для отмены)</code>.\n"
@@ -225,20 +226,33 @@ async def cmd_register(message: types.Message, command: CommandObject) -> None:
     is_admin = False
     if message.chat.id == ADMIN_ID:
         is_admin = True
-    if command.args is None:
-        if message.chat.first_name and message.chat.last_name:
-            first_name, last_name = message.chat.first_name, message.chat.last_name
-        else:
+    if not command.args:
+        await message.answer(
+            "Правильное использование команды:\n"
+            "<pre>/register Имя Фамилия\nВаш отдел (обязательно с новой строки!)</pre>"
+            "\nВвод имени и фамилии не обязательны, если они указаны в вашем профиле Telegram, "
+            "в таком случае команду писать так:\n"
+            "<pre>/register Ваш отдел</pre>",
+            parse_mode=ParseMode.HTML,
+        )
+        return
+    if len(command.args.splitlines()) == 2:
+        first_name, last_name = command.args.splitlines()[0].split()
+        department = command.args.splitlines()[1]
+    elif len(command.args.splitlines()) == 1:
+        if not message.from_user.first_name and not message.from_user.last_name:
             await message.answer(
                 "У вас не указано имя или фамилия в профиле телеграмма "
                 "и вы не указали их в вводе. Пожалуйста, укажите имя и фамилию в команде.\n"
-                "<code>/register Имя Фамилия</code>",
+                "<pre>/register Имя Фамилия\nВаш отдел (обязательно с новой строки!)</pre>",
                 parse_mode=ParseMode.HTML,
             )
             return
+        first_name, last_name = message.from_user.first_name, message.from_user.last_name
+        department = command.args
     else:
-        first_name, last_name = command.args.split()
-    if not (ans := await answer_register(message, first_name, last_name, is_admin)):
+        return
+    if not (ans := await answer_register(message, first_name, last_name, department, is_admin)):
         return
     await message.answer(ans)
 
@@ -354,7 +368,7 @@ async def cmd_check_authority(message: types.Message) -> None:
     # Регистрация администратора в таблице Users если он не записан в базе.
     if check_user_registration(message.chat.id) or not message.chat.first_name or not message.chat.last_name:
         return
-    await answer_register(message, message.chat.first_name, message.chat.last_name, is_admin=True)
+    await answer_register(message, message.chat.first_name, message.chat.last_name, "Admin", True)
 
 
 @dispatcher.message(Command("block"))
