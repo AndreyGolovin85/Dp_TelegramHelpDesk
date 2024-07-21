@@ -1,18 +1,5 @@
 FROM python:3.11-slim
 
-RUN groupadd --gid 2000 node && useradd --uid 2000 --gid node --shell /bin/bash --create-home node && \
-    usermod -aG sudo node
-
-USER 2000
-
-WORKDIR /app
-
-ENV VIRTUAL_ENV=/app/venv
-
-RUN python3 -m venv $VIRTUAL_ENV
-
-ENV PATH="$VIRTUAL_ENV/bin:$PATH"
-
 COPY requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt
