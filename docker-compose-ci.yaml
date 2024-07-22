@@ -1,4 +1,4 @@
-version: "3.9"
+version: "3.3"
 
 services:
   bot:
@@ -8,8 +8,4 @@ services:
       API_TOKEN: $API_TOKEN
       ADMIN_ID: $ADMIN_ID
       ACCESS_KEY: $ACCESS_KEY
-    command: >
-      sh -c "python bot/bot.py"
-
-volumes:
-  data:
+    command: python bot/bot.py
