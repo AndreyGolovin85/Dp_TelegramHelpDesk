@@ -3,6 +3,8 @@ from enum import Enum
 
 from pydantic import BaseModel
 
+from aiogram.fsm.state import StatesGroup, State
+
 status_type: TypeAlias = Literal["new", "in_work", "completed", "rejected"]
 
 
@@ -30,3 +32,8 @@ class TicketDict(BaseModel):
 
 class TicketDictID(TicketDict):
     id: int
+
+
+class TicketStates(StatesGroup):
+    title = State()
+    description = State()
