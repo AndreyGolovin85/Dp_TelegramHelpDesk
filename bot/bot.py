@@ -10,6 +10,9 @@ from aiogram.filters.command import Command, CommandObject
 from aiogram.types import BotCommand, BotCommandScopeDefault
 from aiogram.utils.deep_linking import create_start_link
 from aiogram.utils.formatting import Text
+from aiogram.fsm.context import FSMContext
+
+from custom_types import TicketStates
 from db import (
     add_blocked_user,
     add_ticket,
@@ -173,7 +176,7 @@ async def cmd_help(message: types.Message):
         "Основные команды для работы:\n"
         "/register - команда для регистрации пользователя. При регистрации возможно указать свои имя/фамилию в формате"
         "\n<pre>/register Имя Фамилия\nВаш отдел</pre>\n"
-        "/new_ticket - команда для создания новой заявки, <code>/new_ticket (опишите тут вашу проблему)</code>.\n"
+        "/new_ticket - команда для создания новой заявки.\n"
         "/tickets - команда для проверки ваших заявок.\n"
         "/cancel - команда для отмены заявки <code>/cancel (номер тикета для отмены)</code>.\n"
         "/complete - команда для самостоятельного закрытия заявки "
@@ -291,25 +294,40 @@ async def cmd_tickets(message: types.Message, command: CommandObject) -> None:
 
 
 @dispatcher.message(Command("new_ticket"))
-async def cmd_add_ticket(message: types.Message, command: CommandObject) -> None:
-    if check_blocked(message.from_user.id) is True:
-        return
-    if command.args is None:
-        await message.reply(
-            "Правильный вызов данной команды: */new_ticket <опишите тут вашу проблему>*",
-            parse_mode=ParseMode.MARKDOWN,
-        )
-        return
-
+async def cmd_start_ticket(message: types.Message, state: FSMContext) -> None:
     if not check_user_registration(message.chat.id) or not message.from_user:
         await message.answer("Вы не зарегистрированы в боте, введите команду /register.")
         return
-    ticket_dict = new_ticket(command.args, f"Запрос от {message.from_user.full_name}", message.chat.id)
+
+    await message.reply("Введите кратко суть вашей проблемы:")
+    await state.set_state(TicketStates.title)
+
+
+@dispatcher.message(TicketStates.title)
+async def process_title(message: types.Message, state: FSMContext) -> None:
+    title = message.text
+    await state.update_data(title=title)
+    await message.reply("Теперь введите описание вашей проблемы:")
+    await state.set_state(TicketStates.description)
+
+
+@dispatcher.message(TicketStates.description)
+async def process_description(message: types.Message, state: FSMContext) -> None:
+    description = message.text
+    user_id = message.chat.id
+
+    data = await state.get_data()
+    title = data.get('title')
+
+    ticket_dict = new_ticket(description, title, user_id)
     reply_text = raw_reply(ticket_dict)
     ticket_id = add_ticket(ticket_dict)
+
     await admin_to_accept_button(reply_text, ticket_id)
-    if message.chat.id != ADMIN_ID:
-        await message.reply(**reply_text.as_kwargs(), reply_markup=buttons_keyboard(ticket_id, "reject"))
+    if user_id != ADMIN_ID:
+        await message.reply(*reply_text.as_kwargs())
+
+    await state.set_state(None)
 
 
 @dispatcher.message(Command("cancel"))
