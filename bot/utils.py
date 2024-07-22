@@ -36,8 +36,11 @@ def new_user(user_uid: int, first_name: str, last_name: str, department: str) ->
 
 
 def raw_reply(item: TicketDict) -> Text:
+    user = get_user_by_uid(item.user_uid)
     return as_list(
-        f"ID пользователя: {item.user_uid}",
+        f"От пользователя: {user.first_name} {user.last_name}",
+        f"Отдел: {user.department}",
+        f"Приоритет: {user.is_priority}",
         f"Заголовок: {item.title}",
         f"Описание: {item.description}",
         f"Статус: {item.status}",
