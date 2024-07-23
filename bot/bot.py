@@ -12,7 +12,7 @@ from aiogram.utils.deep_linking import create_start_link
 from aiogram.utils.formatting import Text
 from aiogram.fsm.context import FSMContext
 
-from custom_types import TicketStates
+from custom_types import TicketStates, RegisterStates
 from db import (
     add_blocked_user,
     add_ticket,
@@ -40,7 +40,7 @@ dispatcher = Dispatcher()
 
 
 def buttons_keyboard(
-    unique_id: int, keyboard_type: Literal["accept", "complete", "reject", "unlock"] = "accept"
+        unique_id: int, keyboard_type: Literal["accept", "complete", "reject", "unlock"] = "accept"
 ) -> types.InlineKeyboardMarkup:
     """
     Формирует клавиатуру в зависимости от нужного варианта.
@@ -191,6 +191,7 @@ till_block_counter = {}
 @dispatcher.message(Command("start"))
 async def cmd_start(message: types.Message, command: CommandObject):
     if check_blocked(message.from_user.id) is True:
+        await message.answer("Вы заблокированы. Обратитесь к администратору.")
         return
     if command.args == ACCESS_KEY:
         await message.answer(
@@ -223,41 +224,73 @@ async def my_chat_member(message: types.Message) -> None:
 
 
 @dispatcher.message(Command("register"))
-async def cmd_register(message: types.Message, command: CommandObject) -> None:
+async def cmd_register(message: types.Message, state: FSMContext) -> None:
     if check_blocked(message.from_user.id) is True:
+        await message.answer("Вы заблокированы. Обратитесь к администратору.")
         return
-    is_admin = False
+
     if message.chat.id == ADMIN_ID:
-        is_admin = True
-    if not command.args:
-        await message.answer(
-            "Правильное использование команды:\n"
-            "<pre>/register Имя Фамилия\nВаш отдел (обязательно с новой строки!)</pre>"
-            "\nВвод имени и фамилии не обязательны, если они указаны в вашем профиле Telegram, "
-            "в таком случае команду писать так:\n"
-            "<pre>/register Ваш отдел</pre>",
-            parse_mode=ParseMode.HTML,
-        )
-        return
-    if len(command.args.splitlines()) == 2:
-        first_name, last_name = command.args.splitlines()[0].split()
-        department = command.args.splitlines()[1]
-    elif len(command.args.splitlines()) == 1:
-        if not message.from_user.first_name and not message.from_user.last_name:
-            await message.answer(
-                "У вас не указано имя или фамилия в профиле телеграмма "
-                "и вы не указали их в вводе. Пожалуйста, укажите имя и фамилию в команде.\n"
-                "<pre>/register Имя Фамилия\nВаш отдел (обязательно с новой строки!)</pre>",
-                parse_mode=ParseMode.HTML,
-            )
-            return
-        first_name, last_name = message.from_user.first_name, message.from_user.last_name
-        department = command.args
+        first_name = message.from_user.first_name
+        last_name = message.from_user.last_name
+        if first_name and last_name:
+            await message.reply("Введите ваш отдел.\nНапример: Отдел разработки")
+            await state.update_data(first_name=first_name, last_name=last_name)
+            await state.set_state(RegisterStates.department)
+        else:
+            await state.set_state(RegisterStates.first_and_last_name)
+            await message.reply("Введите ваше имя и фамилию.\nНапример: Иван Иванов\n")
     else:
+        await message.reply("Регистрация доступна только администратору.")
+
+
+@dispatcher.message(RegisterStates.first_and_last_name)
+async def process_name_and_department(message: types.Message, state: FSMContext) -> None:
+    is_admin = message.chat.id == ADMIN_ID
+    first_and_last_name = message.text
+    parts = first_and_last_name.split(" ")
+    if len(parts) > 2:
+        await message.reply("Неверный формат. Введите имя и фамилию.")
         return
-    if not (ans := await answer_register(message, first_name, last_name, department, is_admin)):
-        return
-    await message.answer(ans)
+    else:
+        first_name = parts[0]
+        last_name = parts[1]
+        await state.update_data(first_name=first_name, last_name=last_name, is_admin=is_admin)
+        await message.reply("Введите ваш отдел.\nНапример: Отдел разработки")
+        await state.set_state(RegisterStates.department)
+
+
+@dispatcher.message(RegisterStates.department)
+async def process_department(message: types.Message, state: FSMContext) -> None:
+    department = message.text
+    await state.update_data(department=department)
+    data = await state.get_data()
+
+    await message.reply("Проверьте данные и подтвердите регистрацию.\n"
+                        f"Имя: {data.get('first_name')}\n"
+                        f"Фамилия: {data.get('last_name')}\n"
+                        f"Отдел: {data.get('department')}\n\n"
+                        "Нажмите /confirm, чтобы подтвердить,\nили /cancel, чтобы отменить.")
+    await state.set_state(RegisterStates.confirm)
+
+
+@dispatcher.message(RegisterStates.confirm)
+async def process_confirm(message: types.Message, state: FSMContext) -> None:
+    if message.text == '/confirm':
+        data = await state.get_data()
+        first_name = data.get('first_name')
+        last_name = data.get('last_name')
+        department = data.get('department')
+        is_admin = data.get('is_admin')
+
+        ans = await answer_register(message, first_name, last_name, department, is_admin)
+        if ans:
+            await message.reply(ans)
+        await state.set_state(None)
+    elif message.text == '/cancel':
+        await message.reply("Регистрация отменена.")
+        await state.set_state(None)
+    else:
+        await message.reply("Неверная команда. Нажмите /confirm, чтобы подтвердить,\nили /cancel, чтобы отменить.")
 
 
 @dispatcher.message(Command("tickets"))
@@ -295,6 +328,9 @@ async def cmd_tickets(message: types.Message, command: CommandObject) -> None:
 
 @dispatcher.message(Command("new_ticket"))
 async def cmd_start_ticket(message: types.Message, state: FSMContext) -> None:
+    if check_blocked(message.from_user.id) is True:
+        await message.answer("Вы заблокированы. Обратитесь к администратору.")
+        return
     if not check_user_registration(message.chat.id) or not message.from_user:
         await message.answer("Вы не зарегистрированы в боте, введите команду /register.")
         return
@@ -333,6 +369,7 @@ async def process_description(message: types.Message, state: FSMContext) -> None
 @dispatcher.message(Command("cancel"))
 async def cmd_cancel_ticket(message: types.Message, command: CommandObject) -> None:
     if check_blocked(message.from_user.id) is True:
+        await message.answer("Вы заблокированы. Обратитесь к администратору.")
         return
     if command.args is None:
         await message.reply(
@@ -355,6 +392,7 @@ async def cmd_cancel_ticket(message: types.Message, command: CommandObject) -> N
 @dispatcher.message(Command("complete"))
 async def cmd_complete_ticket(message: types.Message, command: CommandObject) -> None:
     if check_blocked(message.from_user.id) is True:
+        await message.answer("Вы заблокированы. Обратитесь к администратору.")
         return
     if command.args is None:
         await message.reply(
@@ -377,6 +415,7 @@ async def cmd_complete_ticket(message: types.Message, command: CommandObject) ->
 @dispatcher.message(Command("check_admin"))
 async def cmd_check_authority(message: types.Message) -> None:
     if check_blocked(message.from_user.id) is True:
+        await message.answer("Вы заблокированы. Обратитесь к администратору.")
         return
     if message.chat.id != ADMIN_ID:
         await message.reply("Нет прав администратора.")
@@ -421,7 +460,6 @@ async def cmd_unblock_user(message: types.Message, command: CommandObject) -> No
 
 async def set_commands():
     commands = [
-        BotCommand(command="start", description="Старт"),
         BotCommand(command="register", description="Команда для регистрации пользователя"),
         BotCommand(command="new_ticket", description="Команда для создания новой заявки"),
         BotCommand(command="tickets", description="Команда для проверки ваших заявок"),

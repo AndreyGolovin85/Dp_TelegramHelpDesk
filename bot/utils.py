@@ -5,8 +5,7 @@ from db import User, add_user, get_user_by_uid, list_ticket_ids
 
 
 async def answer_register(
-    message: Message, first_name: str, last_name: str, department: str, is_admin: bool = False
-) -> str:
+        message: Message, first_name: str, last_name: str, department: str, is_admin: bool = False) -> str:
     user_uid = message.chat.id
     if not is_admin:
         user_dict = new_user(user_uid, first_name, last_name, department)
