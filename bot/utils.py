@@ -7,14 +7,14 @@ from db import User, add_user, get_user_by_uid, list_ticket_ids
 async def answer_register(
         message: Message, first_name: str, last_name: str, department: str, is_admin: bool = False) -> str:
     user_uid = message.chat.id
-    if not is_admin:
-        user_dict = new_user(user_uid, first_name, last_name, department)
-    else:
-        user_dict = UserDTO(
-            user_uid=user_uid, first_name=first_name, last_name=last_name, department="Admin", is_priority=99
-        )
     user = check_user_registration(user_uid)
     if not user:
+        if not is_admin:
+            user_dict = new_user(user_uid, first_name, last_name, department)
+        else:
+            user_dict = UserDTO(
+                user_uid=user_uid, first_name=first_name, last_name=last_name, department="Admin", is_priority=99
+            )
         add_user(user_dict)
         answer = "Вы успешно зарегистрировались!"
     else:
