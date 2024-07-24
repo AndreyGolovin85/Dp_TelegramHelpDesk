@@ -107,6 +107,7 @@ async def manage_users(callback: types.CallbackQuery):
     _, action, uid = callback.data.split("_")
     if action == "unlock":
         unblock_user(uid)
+        till_block_counter.pop(int(uid))
         await callback.message.edit_text(f"Пользователь {uid} разблокирован.")
         await bot.send_message(chat_id=uid, text="Вы были разблокированы администратором бота.")
     await callback.answer()
