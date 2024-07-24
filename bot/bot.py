@@ -249,7 +249,7 @@ async def process_name_and_department(message: types.Message, state: FSMContext)
     is_admin = message.chat.id == ADMIN_ID
     first_and_last_name = message.text
     parts = first_and_last_name.split(" ")
-    if len(parts) > 2:
+    if len(parts) < 2:
         await message.reply("Неверный формат. Введите имя и фамилию.")
         return
     else:
@@ -263,15 +263,19 @@ async def process_name_and_department(message: types.Message, state: FSMContext)
 @dispatcher.message(RegisterStates.department)
 async def process_department(message: types.Message, state: FSMContext) -> None:
     department = message.text
-    await state.update_data(department=department)
-    data = await state.get_data()
+    if department is None:
+        await message.reply("Неверный формат. Введите отдел.")
+        return
+    else:
+        await state.update_data(department=department)
+        data = await state.get_data()
 
-    await message.reply("Проверьте данные и подтвердите регистрацию.\n"
-                        f"Имя: {data.get('first_name')}\n"
-                        f"Фамилия: {data.get('last_name')}\n"
-                        f"Отдел: {data.get('department')}\n\n"
-                        "Нажмите /confirm, чтобы подтвердить,\nили /cancel, чтобы отменить.")
-    await state.set_state(RegisterStates.confirm)
+        await message.reply("Проверьте данные и подтвердите регистрацию.\n"
+                            f"Имя: {data.get('first_name')}\n"
+                            f"Фамилия: {data.get('last_name')}\n"
+                            f"Отдел: {data.get('department')}\n\n"
+                            "Нажмите /confirm, чтобы подтвердить,\nили /cancel, чтобы отменить.")
+        await state.set_state(RegisterStates.confirm)
 
 
 @dispatcher.message(RegisterStates.confirm)
@@ -282,6 +286,11 @@ async def process_confirm(message: types.Message, state: FSMContext) -> None:
         last_name = data.get('last_name')
         department = data.get('department')
         is_admin = data.get('is_admin')
+
+        if first_name is None or last_name is None or department is None or is_admin is None:
+            await message.reply("Ошибка: Не все данные были получены. Пожалуйста, попробуйте зарегистрироваться заново.")
+            await state.set_state(None)
+            return
 
         ans = await answer_register(message, first_name, last_name, department, is_admin)
         if ans:
