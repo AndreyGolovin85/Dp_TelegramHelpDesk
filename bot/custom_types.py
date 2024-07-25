@@ -37,3 +37,9 @@ class TicketDictID(TicketDict):
 class TicketStates(StatesGroup):
     title = State()
     description = State()
+
+
+class RegisterStates(StatesGroup):
+    first_and_last_name = State()
+    department = State()
+    confirm = State()
