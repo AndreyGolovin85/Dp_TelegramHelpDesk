@@ -8,7 +8,7 @@ from aiogram import Bot, Dispatcher, filters, types
 from aiogram.enums import ParseMode
 from aiogram.filters.command import Command, CommandObject
 from aiogram.fsm.context import FSMContext
-from aiogram.types import BotCommand, BotCommandScopeDefault
+from aiogram.types import BotCommand, BotCommandScopeDefault, BotCommandScopeChat
 from aiogram.utils.deep_linking import create_start_link
 from aiogram.utils.formatting import Text
 from custom_types import RegisterStates, TicketStates
@@ -195,6 +195,8 @@ async def cmd_start(message: types.Message, command: CommandObject):
         await message.answer("Вы заблокированы. Обратитесь к администратору.")
         return
     if command.args == ACCESS_KEY:
+        is_admin = message.chat.id == ADMIN_ID
+        await set_commands(is_admin)
         await message.answer(
             "Добро пожаловать в бот!\nДля продолжения пройдите регистрацию /register или воспользуйтесь "
             "помощью по командам /help."
@@ -285,7 +287,8 @@ async def process_confirm(message: types.Message, state: FSMContext) -> None:
         is_admin = data.get("is_admin")
 
         if first_name is None or last_name is None or department is None or is_admin is None:
-            await message.reply("Ошибка: Не все данные были получены. Пожалуйста, попробуйте зарегистрироваться заново.")
+            await message.reply(
+                "Ошибка: Не все данные были получены. Пожалуйста, попробуйте зарегистрироваться заново.")
             await state.set_state(None)
             return
 
@@ -465,20 +468,35 @@ async def cmd_unblock_user(message: types.Message, command: CommandObject) -> No
         await message.answer(f"Пользователь {int(command.args)} разблокирован.")
 
 
-async def set_commands():
-    commands = [
-        BotCommand(command="register", description="Команда для регистрации пользователя"),
-        BotCommand(command="new_ticket", description="Команда для создания новой заявки"),
-        BotCommand(command="tickets", description="Команда для проверки ваших заявок"),
-        BotCommand(command="cancel", description="Команда для отмены заявки"),
-        BotCommand(command="complete", description="Команда для самостоятельного закрытия заявки"),
-        BotCommand(command="help", description="Справка по командам"),
-    ]
-    await bot.set_my_commands(commands, BotCommandScopeDefault())
+async def set_commands(is_admin):
+    if is_admin:
+        commands = [
+            BotCommand(command="register", description="Команда для регистрации пользователя"),
+            BotCommand(command="new_ticket", description="Команда для создания новой заявки"),
+            BotCommand(command="tickets", description="Команда для проверки ваших заявок"),
+            BotCommand(command="cancel", description="Команда для отмены заявки"),
+            BotCommand(command="complete", description="Команда для самостоятельного закрытия заявки"),
+            BotCommand(command="help", description="Справка по командам"),
+            BotCommand(command="tickets", description="Команда для создания новой заявки"),
+            BotCommand(command="check_admin", description="Команда для проверки статуса Admin"),
+            BotCommand(command="block", description="Команда для блокировки пользователя"),
+            BotCommand(command="unblock", description="Команда для разблокировки пользователя"),
+        ]
+        await bot.set_my_commands(commands, BotCommandScopeChat(chat_id=ADMIN_ID))
+
+    else:
+        commands = [
+            BotCommand(command="register", description="Команда для регистрации пользователя"),
+            BotCommand(command="new_ticket", description="Команда для создания новой заявки"),
+            BotCommand(command="tickets", description="Команда для проверки ваших заявок"),
+            BotCommand(command="cancel", description="Команда для отмены заявки"),
+            BotCommand(command="complete", description="Команда для самостоятельного закрытия заявки"),
+            BotCommand(command="help", description="Справка по командам"),
+        ]
+        await bot.set_my_commands(commands, BotCommandScopeDefault())
 
 
 async def main():
-    await set_commands()
     await bot.send_message(
         chat_id=ADMIN_ID,
         text=f"Бот запущен, приглашение работает по ссылке {await generate_start_link(bot)}",
