@@ -7,12 +7,11 @@ import sys
 from aiogram import Bot, Dispatcher, filters, types
 from aiogram.enums import ParseMode
 from aiogram.filters.command import Command, CommandObject
+from aiogram.fsm.context import FSMContext
 from aiogram.types import BotCommand, BotCommandScopeDefault
 from aiogram.utils.deep_linking import create_start_link
 from aiogram.utils.formatting import Text
-from aiogram.fsm.context import FSMContext
-
-from custom_types import TicketStates, RegisterStates
+from custom_types import RegisterStates, TicketStates
 from db import (
     add_blocked_user,
     add_ticket,
@@ -40,7 +39,7 @@ dispatcher = Dispatcher()
 
 
 def buttons_keyboard(
-        unique_id: int, keyboard_type: Literal["accept", "complete", "reject", "unlock"] = "accept"
+    unique_id: int, keyboard_type: Literal["accept", "complete", "reject", "unlock"] = "accept"
 ) -> types.InlineKeyboardMarkup:
     """
     Формирует клавиатуру в зависимости от нужного варианта.
@@ -165,7 +164,7 @@ async def send_message_users(callback: types.CallbackQuery):
 async def admin_to_accept_button(reply_text: Text, ticket_id: int):
     await bot.send_message(
         chat_id=ADMIN_ID,
-        text=f"Новая заявка: \n{reply_text.as_html()}\nс номером {ticket_id} создана.",
+        text=f"Новая заявка: \n{reply_text.as_html()}\nПод номером {ticket_id} создана.",
         reply_markup=buttons_keyboard(ticket_id),
     )
 
@@ -231,18 +230,15 @@ async def cmd_register(message: types.Message, state: FSMContext) -> None:
         await message.answer("Вы заблокированы. Обратитесь к администратору.")
         return
 
-    if message.chat.id == ADMIN_ID:
-        first_name = message.from_user.first_name
-        last_name = message.from_user.last_name
-        if first_name and last_name:
-            await message.reply("Введите ваш отдел.\nНапример: Отдел разработки")
-            await state.update_data(first_name=first_name, last_name=last_name)
-            await state.set_state(RegisterStates.department)
-        else:
-            await state.set_state(RegisterStates.first_and_last_name)
-            await message.reply("Введите ваше имя и фамилию.\nНапример: Иван Иванов\n")
+    first_name = message.from_user.first_name
+    last_name = message.from_user.last_name
+    if first_name and last_name:
+        await message.reply("Введите ваш отдел.\nНапример: Отдел разработки")
+        await state.update_data(first_name=first_name, last_name=last_name)
+        await state.set_state(RegisterStates.department)
     else:
-        await message.reply("Регистрация доступна только администратору.")
+        await state.set_state(RegisterStates.first_and_last_name)
+        await message.reply("Введите ваши имя и фамилию.\nНапример: Иван Иванов\n")
 
 
 @dispatcher.message(RegisterStates.first_and_last_name)
@@ -253,12 +249,11 @@ async def process_name_and_department(message: types.Message, state: FSMContext)
     if len(parts) < 2:
         await message.reply("Неверный формат. Введите имя и фамилию.")
         return
-    else:
-        first_name = parts[0]
-        last_name = parts[1]
-        await state.update_data(first_name=first_name, last_name=last_name, is_admin=is_admin)
-        await message.reply("Введите ваш отдел.\nНапример: Отдел разработки")
-        await state.set_state(RegisterStates.department)
+    first_name = parts[0]
+    last_name = parts[1]
+    await state.update_data(first_name=first_name, last_name=last_name, is_admin=is_admin)
+    await message.reply("Введите ваш отдел.\nНапример: Отдел разработки")
+    await state.set_state(RegisterStates.department)
 
 
 @dispatcher.message(RegisterStates.department)
@@ -267,26 +262,27 @@ async def process_department(message: types.Message, state: FSMContext) -> None:
     if department is None:
         await message.reply("Неверный формат. Введите отдел.")
         return
-    else:
-        await state.update_data(department=department)
-        data = await state.get_data()
+    await state.update_data(department=department)
+    data = await state.get_data()
 
-        await message.reply("Проверьте данные и подтвердите регистрацию.\n"
-                            f"Имя: {data.get('first_name')}\n"
-                            f"Фамилия: {data.get('last_name')}\n"
-                            f"Отдел: {data.get('department')}\n\n"
-                            "Нажмите /confirm, чтобы подтвердить,\nили /cancel, чтобы отменить.")
-        await state.set_state(RegisterStates.confirm)
+    await message.reply(
+        "Проверьте данные и подтвердите регистрацию.\n"
+        f"Имя: {data.get('first_name')}\n"
+        f"Фамилия: {data.get('last_name')}\n"
+        f"Отдел: {data.get('department')}\n\n"
+        "Нажмите /confirm, чтобы подтвердить,\nили /cancel, чтобы отменить."
+    )
+    await state.set_state(RegisterStates.confirm)
 
 
 @dispatcher.message(RegisterStates.confirm)
 async def process_confirm(message: types.Message, state: FSMContext) -> None:
-    if message.text == '/confirm':
+    if message.text == "/confirm":
         data = await state.get_data()
-        first_name = data.get('first_name')
-        last_name = data.get('last_name')
-        department = data.get('department')
-        is_admin = data.get('is_admin')
+        first_name = data.get("first_name")
+        last_name = data.get("last_name")
+        department = data.get("department")
+        is_admin = data.get("is_admin")
 
         if first_name is None or last_name is None or department is None or is_admin is None:
             await message.reply("Ошибка: Не все данные были получены. Пожалуйста, попробуйте зарегистрироваться заново.")
@@ -297,7 +293,7 @@ async def process_confirm(message: types.Message, state: FSMContext) -> None:
         if ans:
             await message.reply(ans)
         await state.set_state(None)
-    elif message.text == '/cancel':
+    elif message.text == "/cancel":
         await message.reply("Регистрация отменена.")
         await state.set_state(None)
     else:
@@ -364,7 +360,7 @@ async def process_description(message: types.Message, state: FSMContext) -> None
     user_id = message.chat.id
 
     data = await state.get_data()
-    title = data.get('title')
+    title = data.get("title")
 
     ticket_dict = new_ticket(description, title, user_id)
     reply_text = raw_reply(ticket_dict)
@@ -372,7 +368,7 @@ async def process_description(message: types.Message, state: FSMContext) -> None
 
     await admin_to_accept_button(reply_text, ticket_id)
     if user_id != ADMIN_ID:
-        await message.reply(*reply_text.as_kwargs())
+        await message.reply(reply_text.as_html(), reply_markup=buttons_keyboard(ticket_id, "reject"))
 
     await state.set_state(None)
 
