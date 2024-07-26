@@ -357,22 +357,18 @@ async def process_title(message: types.Message, state: FSMContext) -> None:
 @dispatcher.message(TicketStates.description)
 async def process_description(message: types.Message, state: FSMContext) -> None:
     description = message.text
-    try:
-        user_id = message.chat.id
+    user_id = message.chat.id
 
-        data = await state.get_data()
-        title = data.get("title")
+    data = await state.get_data()
+    title = data.get("title")
 
-        ticket_dict = new_ticket(description, title, user_id)
-        reply_text = raw_reply(ticket_dict)
-        ticket_id = add_ticket(ticket_dict)
+    ticket_dict = new_ticket(description, title, user_id)
+    reply_text = raw_reply(ticket_dict)
+    ticket_id = add_ticket(ticket_dict)
 
-        await admin_to_accept_button(reply_text, ticket_id)
-        if user_id != ADMIN_ID:
-            await message.reply(reply_text.as_html(), reply_markup=buttons_keyboard(ticket_id, "reject"))
-
-    except Exception as e:
-        print(e)
+    await admin_to_accept_button(reply_text, ticket_id)
+    if user_id != ADMIN_ID:
+        await message.reply(reply_text.as_html(), reply_markup=buttons_keyboard(ticket_id, "reject"))
 
     await state.set_state(None)
 
