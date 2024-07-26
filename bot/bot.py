@@ -8,7 +8,7 @@ from aiogram import Bot, Dispatcher, filters, types
 from aiogram.enums import ParseMode
 from aiogram.filters.command import Command, CommandObject
 from aiogram.fsm.context import FSMContext
-from aiogram.types import BotCommand, BotCommandScopeDefault
+from aiogram.types import BotCommand, BotCommandScopeDefault, BotCommandScopeChat
 from aiogram.utils.deep_linking import create_start_link
 from aiogram.utils.formatting import Text
 from custom_types import RegisterStates, TicketStates
@@ -482,6 +482,7 @@ async def set_commands(is_admin):
             BotCommand(command="block", description="Команда для блокировки пользователя"),
             BotCommand(command="unblock", description="Команда для разблокировки пользователя"),
         ]
+        await bot.set_my_commands(commands, BotCommandScopeChat(chat_id=ADMIN_ID))
 
     else:
         commands = [
@@ -492,7 +493,7 @@ async def set_commands(is_admin):
             BotCommand(command="complete", description="Команда для самостоятельного закрытия заявки"),
             BotCommand(command="help", description="Справка по командам"),
         ]
-    await bot.set_my_commands(commands, BotCommandScopeDefault())
+        await bot.set_my_commands(commands, BotCommandScopeDefault())
 
 
 async def main():
