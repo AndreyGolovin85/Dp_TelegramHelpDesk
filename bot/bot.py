@@ -238,7 +238,7 @@ async def cmd_register(message: types.Message, state: FSMContext) -> None:
         await state.set_state(RegisterStates.department)
     else:
         await state.set_state(RegisterStates.first_and_last_name)
-        await message.reply("Введите ваше имя и фамилию.\nНапример: Иван Иванов\n")
+        await message.reply("Введите ваши имя и фамилию.\nНапример: Иван Иванов\n")
 
 
 @dispatcher.message(RegisterStates.first_and_last_name)
