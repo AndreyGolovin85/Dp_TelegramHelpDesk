@@ -298,7 +298,7 @@ async def process_confirm(message: types.Message, state: FSMContext) -> None:
         await message.reply("Регистрация отменена.")
         await state.set_state(None)
     else:
-        await message.reply("Неверная команда. Нажмите /confirm, чтобы подтвердить,\nили /cancel, чтобы отменить.")
+        await message.reply("Неверная команда. Нажмите /confirm, чтобы подтвердить,\nили /reject, чтобы отменить.")
 
 
 @dispatcher.message(Command("tickets"))
