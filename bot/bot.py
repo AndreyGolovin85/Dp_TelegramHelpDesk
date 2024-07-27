@@ -271,7 +271,7 @@ async def process_department(message: types.Message, state: FSMContext) -> None:
         f"Имя: {data.get('first_name')}\n"
         f"Фамилия: {data.get('last_name')}\n"
         f"Отдел: {data.get('department')}\n\n"
-        "Нажмите /confirm, чтобы подтвердить,\nили /cancel, чтобы отменить."
+        "Нажмите /confirm, чтобы подтвердить,\nили /reject, чтобы отменить."
     )
     await state.set_state(RegisterStates.confirm)
 
