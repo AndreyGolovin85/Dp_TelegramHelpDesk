@@ -8,7 +8,7 @@ from aiogram import Bot, Dispatcher, filters, types
 from aiogram.enums import ParseMode
 from aiogram.filters.command import Command, CommandObject
 from aiogram.fsm.context import FSMContext
-from aiogram.types import BotCommand, BotCommandScopeDefault, BotCommandScopeChat
+from aiogram.types import BotCommand, BotCommandScopeChat, BotCommandScopeDefault
 from aiogram.utils.deep_linking import create_start_link
 from aiogram.utils.formatting import Text
 from custom_types import RegisterStates, TicketStates
@@ -245,7 +245,6 @@ async def cmd_register(message: types.Message, state: FSMContext) -> None:
 
 @dispatcher.message(RegisterStates.first_and_last_name)
 async def process_name_and_department(message: types.Message, state: FSMContext) -> None:
-    is_admin = message.chat.id == ADMIN_ID
     first_and_last_name = message.text
     parts = first_and_last_name.split(" ")
     if len(parts) < 2:
@@ -253,7 +252,7 @@ async def process_name_and_department(message: types.Message, state: FSMContext)
         return
     first_name = parts[0]
     last_name = parts[1]
-    await state.update_data(first_name=first_name, last_name=last_name, is_admin=is_admin)
+    await state.update_data(first_name=first_name, last_name=last_name)
     await message.reply("Введите ваш отдел.\nНапример: Отдел разработки")
     await state.set_state(RegisterStates.department)
 
@@ -284,11 +283,10 @@ async def process_confirm(message: types.Message, state: FSMContext) -> None:
         first_name = data.get("first_name")
         last_name = data.get("last_name")
         department = data.get("department")
-        is_admin = data.get("is_admin")
+        is_admin = message.chat.id == ADMIN_ID
 
         if first_name is None or last_name is None or department is None or is_admin is None:
-            await message.reply(
-                "Ошибка: Не все данные были получены. Пожалуйста, попробуйте зарегистрироваться заново.")
+            await message.reply("Ошибка: Не все данные были получены. Пожалуйста, попробуйте зарегистрироваться заново.")
             await state.set_state(None)
             return
 
