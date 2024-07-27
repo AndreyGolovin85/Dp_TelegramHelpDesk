@@ -294,7 +294,7 @@ async def process_confirm(message: types.Message, state: FSMContext) -> None:
         if ans:
             await message.reply(ans)
         await state.set_state(None)
-    elif message.text == "/cancel":
+    elif message.text == "/reject":
         await message.reply("Регистрация отменена.")
         await state.set_state(None)
     else:
