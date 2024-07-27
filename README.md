@@ -1,4 +1,4 @@
-# Flask_Dp_TelegramHelpDesk
+# Dp_TelegramHelpDesk
 Дипломный проект "Телеграм-бот HelpDesk" на Flask.
 Рекомендуется версия Python 3.10.
 Кроме зависимостей дополнительно можно использовать ruff (`pip install ruff`)
