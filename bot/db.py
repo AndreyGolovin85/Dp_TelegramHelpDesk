@@ -5,6 +5,8 @@ from custom_types import TicketDict, TicketDictID, UserDTO, status_type
 from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, create_engine, select
 from sqlalchemy.orm import DeclarativeBase, Mapped, MappedAsDataclass, mapped_column, relationship, sessionmaker
 
+import settings as setting
+
 
 class Base(MappedAsDataclass, DeclarativeBase, repr=False, unsafe_hash=True, kw_only=True):
     """
@@ -18,7 +20,7 @@ class Base(MappedAsDataclass, DeclarativeBase, repr=False, unsafe_hash=True, kw_
 
 class User(Base, sessionmaker):
     __tablename__ = "users"
-    user_uid: Mapped[int] = mapped_column(Integer)
+    user_uid: Mapped[int] = mapped_column(Integer, unique=True)
     first_name: Mapped[str] = mapped_column(String(30))
     last_name: Mapped[str] = mapped_column(String(30))
     department: Mapped[str] = mapped_column(String(50))
@@ -167,12 +169,13 @@ def add_ticket(ticket_dict: TicketDict) -> int:
             last_updated=datetime.now(tz=timezone.utc),
             status=ticket_dict.status,
         )
-        print(new_ticket)
         session.add(new_ticket)
         session.commit()
         return new_ticket.id
 
 
-engine = create_engine("sqlite:///bot.db", echo=True)
+engine = create_engine(f"postgresql://{setting.POSTGRES_USER}:{setting.POSTGRES_PASSWORD}@{setting.POSTGRES_HOST}:"
+                       f"{setting.POSTGRES_PORT}/{setting.POSTGRES_DB}",
+                       echo=True)
 Base.metadata.create_all(engine)
 Session = sessionmaker(autoflush=False, bind=engine)
