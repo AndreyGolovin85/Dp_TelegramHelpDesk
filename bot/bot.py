@@ -1,7 +1,6 @@
 import logging
 from typing import Literal
 import asyncio
-import os
 import sys
 
 from aiogram import Bot, Dispatcher, filters, types
@@ -22,19 +21,16 @@ from db import (
     list_tickets,
     unblock_user,
 )
-from dotenv import load_dotenv
 from utils import active_tickets, answer_register, check_user_registration, new_ticket, raw_reply, reply_list
+import settings as setting
 
-load_dotenv()
-API_TOKEN = os.getenv("API_TOKEN")
-_ADMIN_ID = os.getenv("ADMIN_ID")
-ACCESS_KEY = os.getenv("ACCESS_KEY")
-if not API_TOKEN or not _ADMIN_ID or not ACCESS_KEY:
+
+if not setting.API_TOKEN or not setting.ADMIN_ID or not setting.ACCESS_KEY:
     logging.error("Отстутствуют переменные ENV.")
     sys.exit(1)
 
-bot = Bot(token=API_TOKEN)
-ADMIN_ID = int(_ADMIN_ID)
+bot = Bot(token=setting.API_TOKEN)
+ADMIN_ID = int(setting.ADMIN_ID)
 dispatcher = Dispatcher()
 
 
@@ -96,7 +92,7 @@ def buttons_keyboard(
 
 
 async def generate_start_link(our_bot: Bot):
-    return await create_start_link(our_bot, ACCESS_KEY)
+    return await create_start_link(our_bot, setting.ACCESS_KEY)
 
 
 @dispatcher.callback_query(lambda call: call.data.startswith("user_"))
@@ -194,7 +190,7 @@ async def cmd_start(message: types.Message, command: CommandObject):
     if check_blocked(message.from_user.id) is True:
         await message.answer("Вы заблокированы. Обратитесь к администратору.")
         return
-    if command.args == ACCESS_KEY:
+    if command.args == setting.ACCESS_KEY:
         is_admin = message.chat.id == ADMIN_ID
         await set_commands(is_admin)
         await message.answer(
