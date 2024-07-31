@@ -143,9 +143,9 @@ def get_ticket_by_id(ticket_id: int) -> Ticket | None:
 
 
 def edit_ticket_status(
-    ticket_id: int,
-    new_status: status_type,
-    reason: str = "Тикет завершен администратором.",
+        ticket_id: int,
+        new_status: status_type,
+        reason: str = "Тикет завершен администратором.",
 ) -> None:
     """Редактирует статус тикета в БД по его ID"""
     with Session() as session:
@@ -174,7 +174,6 @@ def add_ticket(ticket_dict: TicketDict) -> int:
         return new_ticket.id
 
 
-#engine = create_engine("sqlite:///bot.db", echo=True)
 engine = create_engine(f"postgresql://{setting.POSTGRES_USER}:{setting.POSTGRES_PASSWORD}@{setting.POSTGRES_HOST}:"
                        f"{setting.POSTGRES_PORT}/{setting.POSTGRES_DB}",
                        echo=True)
