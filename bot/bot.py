@@ -113,7 +113,12 @@ async def send_message_users(callback: types.CallbackQuery):
     if not callback.data:
         return
     _, status, ticket_id = callback.data.split("_")
-    if not (ticket := get_ticket_by_id(int(ticket_id))):
+    ticket = get_ticket_by_id(int(ticket_id))
+    if not ticket:
+        return
+    if ticket.status == "rejected":
+        await bot.send_message(chat_id=ADMIN_ID, text=f"Невозможно принять отмененную заявку.")
+        await callback.answer()
         return
 
     if status == "accept":
@@ -228,19 +233,28 @@ async def cmd_register(message: types.Message, state: FSMContext) -> None:
         await message.answer("Вы заблокированы. Обратитесь к администратору.")
         return
 
-    first_name = message.from_user.first_name
-    last_name = message.from_user.last_name
-    if first_name and last_name:
-        await message.reply("Введите ваш отдел.\nНапример: Отдел разработки")
-        await state.update_data(first_name=first_name, last_name=last_name)
-        await state.set_state(RegisterStates.department)
-    else:
-        await state.set_state(RegisterStates.first_and_last_name)
-        await message.reply("Введите ваши имя и фамилию.\nНапример: Иван Иванов\n")
+    if check_user_registration(message.chat.id):
+        await message.answer("Вы уже зарегистрированы.")
+        return
+
+    await message.reply("Введите ваши имя и фамилию.\nНапример: Иван Иванов.\n"
+                        "Или используйте /next, для использования данных из телеграмм профиля.")
+    await state.set_state(RegisterStates.first_and_last_name)
 
 
 @dispatcher.message(RegisterStates.first_and_last_name)
 async def process_name_and_department(message: types.Message, state: FSMContext) -> None:
+    if message.text == "/next":
+        first_name = message.from_user.first_name
+        last_name = message.from_user.last_name
+        if first_name and last_name:
+            await message.reply("Введите ваш отдел.\nНапример: Отдел разработки")
+            await state.update_data(first_name=first_name, last_name=last_name)
+            await state.set_state(RegisterStates.department)
+            return
+        await state.set_state(RegisterStates.first_and_last_name)
+        await message.reply("Введите ваши имя и фамилию.\nНапример: Иван Иванов\n"
+                            "Или используйте /next, для использования данных из телеграмм профиля.")
     first_and_last_name = message.text
     parts = first_and_last_name.split(" ")
     if len(parts) < 2:
