@@ -35,7 +35,7 @@ dispatcher = Dispatcher()
 
 
 def buttons_keyboard(
-    unique_id: int, keyboard_type: Literal["accept", "complete", "reject", "unlock"] = "accept"
+    unique_id: int, keyboard_type: Literal["accept", "complete", "reject", "unlock", "comf_or_regect"] = "accept"
 ) -> types.InlineKeyboardMarkup:
     """
     Формирует клавиатуру в зависимости от нужного варианта.
@@ -79,6 +79,21 @@ def buttons_keyboard(
                 ),
             ],
         ]
+
+    elif keyboard_type == "comf_or_regect":
+        buttons = [
+            [
+                types.InlineKeyboardButton(
+                    text="Подтвердить",
+                    callback_data="confirm"
+                ),
+                types.InlineKeyboardButton(
+                    text="Отменить",
+                    callback_data="reject"
+                ),
+            ],
+        ]
+
     else:
         buttons = [
             [
@@ -117,7 +132,7 @@ async def send_message_users(callback: types.CallbackQuery):
     if not ticket:
         return
     if ticket.status == "rejected":
-        await bot.send_message(chat_id=ADMIN_ID, text=f"Невозможно принять отмененную заявку.")
+        await bot.send_message(chat_id=ADMIN_ID, text=f"Невозможно обрабатывать отмененную заявку.")
         await callback.answer()
         return
 
@@ -280,35 +295,35 @@ async def process_department(message: types.Message, state: FSMContext) -> None:
         "Проверьте данные и подтвердите регистрацию.\n"
         f"Имя: {data.get('first_name')}\n"
         f"Фамилия: {data.get('last_name')}\n"
-        f"Отдел: {data.get('department')}\n\n"
-        "Нажмите /confirm, чтобы подтвердить,\nили /reject, чтобы отменить."
+        f"Отдел: {data.get('department')}\n\n",
+        reply_markup=buttons_keyboard(message.from_user.id, "comf_or_regect"),
     )
     await state.set_state(RegisterStates.confirm)
 
 
-@dispatcher.message(RegisterStates.confirm)
-async def process_confirm(message: types.Message, state: FSMContext) -> None:
-    if message.text == "/confirm":
+@dispatcher.callback_query(lambda call: call.data in ["confirm", "reject"])
+async def process_confirm(callback: types.CallbackQuery, state: FSMContext) -> None:
+    await callback.answer()
+    if callback.data == "confirm":
         data = await state.get_data()
         first_name = data.get("first_name")
         last_name = data.get("last_name")
         department = data.get("department")
-        is_admin = message.chat.id == ADMIN_ID
+        is_admin = callback.message.chat.id == ADMIN_ID
 
         if first_name is None or last_name is None or department is None or is_admin is None:
-            await message.reply("Ошибка: Не все данные были получены. Пожалуйста, попробуйте зарегистрироваться заново.")
+            await callback.message.reply("Ошибка: Не все данные были получены. Пожалуйста,"
+                                         "попробуйте зарегистрироваться заново.")
             await state.set_state(None)
             return
 
-        ans = await answer_register(message, first_name, last_name, department, is_admin)
+        ans = await answer_register(callback.message, first_name, last_name, department, is_admin)
         if ans:
-            await message.reply(ans)
+            await callback.message.edit_text(ans)
         await state.set_state(None)
-    elif message.text == "/reject":
-        await message.reply("Регистрация отменена.")
+    elif callback.data == "reject":
+        await callback.message.edit_text("Регистрация отменена.")
         await state.set_state(None)
-    else:
-        await message.reply("Неверная команда. Нажмите /confirm, чтобы подтвердить,\nили /reject, чтобы отменить.")
 
 
 @dispatcher.message(Command("tickets"))
