@@ -174,8 +174,6 @@ def add_ticket(ticket_dict: TicketDict) -> int:
         return new_ticket.id
 
 
-engine = create_engine(f"postgresql://{setting.POSTGRES_USER}:{setting.POSTGRES_PASSWORD}@{setting.POSTGRES_HOST}:"
-                       f"{setting.POSTGRES_PORT}/{setting.POSTGRES_DB}",
-                       echo=True)
+engine = create_engine("sqlite:///bot.db", echo=True)
 Base.metadata.create_all(engine)
 Session = sessionmaker(autoflush=False, bind=engine)

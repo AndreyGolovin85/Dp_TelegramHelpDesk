@@ -24,7 +24,6 @@ from db import (
 from utils import active_tickets, answer_register, check_user_registration, new_ticket, raw_reply, reply_list
 import settings as setting
 
-
 if not setting.API_TOKEN or not setting.ADMIN_ID or not setting.ACCESS_KEY:
     logging.error("Отстутствуют переменные ENV.")
     sys.exit(1)
@@ -35,7 +34,7 @@ dispatcher = Dispatcher()
 
 
 def buttons_keyboard(
-    unique_id: int, keyboard_type: Literal["accept", "complete", "reject", "unlock", "comf_or_regect"] = "accept"
+        unique_id: int, keyboard_type: Literal["accept", "complete", "reject", "unlock", "comf_or_regect"] = "accept"
 ) -> types.InlineKeyboardMarkup:
     """
     Формирует клавиатуру в зависимости от нужного варианта.
@@ -55,6 +54,12 @@ def buttons_keyboard(
                     callback_data=f"ticket_canceled_{unique_id}",
                 ),
             ],
+            [
+                types.InlineKeyboardButton(
+                    text="Открыть чат с пользователем",
+                    callback_data=f"ticket_canceled_{unique_id}",
+                ),
+            ]
         ]
     elif keyboard_type == "complete":
         buttons = [
@@ -183,6 +188,8 @@ async def admin_to_accept_button(reply_text: Text, ticket_id: int):
         text=f"Новая заявка: \n{reply_text.as_html()}\nПод номером {ticket_id} создана.",
         reply_markup=buttons_keyboard(ticket_id),
     )
+    user_uid = get_ticket_by_id(ticket_id).user_uid
+    await bot.send_message(chat_id=ADMIN_ID, text=f"{user_uid}", reply_markup=buttons_keyboard(ticket_id), )
 
 
 @dispatcher.message(Command("help"))
