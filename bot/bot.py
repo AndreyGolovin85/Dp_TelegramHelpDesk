@@ -213,7 +213,6 @@ async def admin_message(message: types.Message, state: FSMContext):
 
 @dispatcher.message(AdminChatState.waiting_for_user_message)
 async def user_message(message: types.Message, state: FSMContext):
-    user_id = (await state.get_data()).get('user_id')
     admin_message = f"Сообщение от пользователя {message.from_user.full_name}: {message.text}"
     await bot.send_message(ADMIN_ID, admin_message)
     await state.set_state(AdminChatState.waiting_for_admin_message)
