@@ -7,10 +7,11 @@ from aiogram import Bot, Dispatcher, filters, types
 from aiogram.enums import ParseMode
 from aiogram.filters.command import Command, CommandObject
 from aiogram.fsm.context import FSMContext
-from aiogram.types import BotCommand, BotCommandScopeChat, BotCommandScopeDefault
+from aiogram.types import BotCommand, BotCommandScopeChat, BotCommandScopeDefault, InlineKeyboardMarkup, \
+    InlineKeyboardButton
 from aiogram.utils.deep_linking import create_start_link
 from aiogram.utils.formatting import Text
-from custom_types import RegisterStates, TicketStates
+from custom_types import RegisterStates, TicketStates, AdminChatState
 from db import (
     add_blocked_user,
     add_ticket,
@@ -57,7 +58,7 @@ def buttons_keyboard(
             [
                 types.InlineKeyboardButton(
                     text="Открыть чат с пользователем",
-                    callback_data=f"ticket_canceled_{unique_id}",
+                    callback_data=f"user-chat_{unique_id}"
                 ),
             ]
         ]
@@ -188,8 +189,36 @@ async def admin_to_accept_button(reply_text: Text, ticket_id: int):
         text=f"Новая заявка: \n{reply_text.as_html()}\nПод номером {ticket_id} создана.",
         reply_markup=buttons_keyboard(ticket_id),
     )
-    user_uid = get_ticket_by_id(ticket_id).user_uid
-    await bot.send_message(chat_id=ADMIN_ID, text=f"{user_uid}", reply_markup=buttons_keyboard(ticket_id), )
+
+
+@dispatcher.callback_query(lambda call: call.data.startswith("user-chat_"))
+async def chat_user(callback: types.CallbackQuery, state: FSMContext):
+    ticket_id = callback.data.split("_")[1]
+    user_uid = get_ticket_by_id(int(ticket_id)).user_uid
+    await state.update_data(user_uid=user_uid)
+    await callback.message.reply("Введите сообщение для пользователя:")
+    await state.set_state(AdminChatState.waiting_for_admin_message)
+    await callback.answer()
+
+
+@dispatcher.message(AdminChatState.waiting_for_admin_message)
+async def admin_message(message: types.Message, state: FSMContext):
+    data = await state.get_data()
+    user_uid = data.get("user_uid")
+    await bot.send_message(user_uid, f"Сообщение от администратора: {message.text}\n\n"
+                                     f"Введите сообщение чтобы ответить.")
+    await state.set_state(AdminChatState.waiting_for_user_message)
+    #await state.set_state(None)
+
+
+@dispatcher.message(AdminChatState.waiting_for_user_message)
+async def user_message(message: types.Message, state: FSMContext):
+    user_id = (await state.get_data()).get('user_id')
+    admin_message = f"Сообщение от пользователя {message.from_user.full_name}: {message.text}"
+    await bot.send_message(ADMIN_ID, admin_message)
+    await state.set_state(AdminChatState.waiting_for_admin_message)
+
+    await message.answer("Ваше сообщение отправлено администратору.")
 
 
 @dispatcher.message(Command("help"))
