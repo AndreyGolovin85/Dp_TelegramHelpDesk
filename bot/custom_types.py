@@ -46,5 +46,4 @@ class RegisterStates(StatesGroup):
 
 
 class AdminChatState(StatesGroup):
-    waiting_for_user_message = State()
-    waiting_for_admin_message = State()
+    waiting_for_message = State()

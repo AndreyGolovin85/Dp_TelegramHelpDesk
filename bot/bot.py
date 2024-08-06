@@ -34,9 +34,10 @@ ADMIN_ID = int(setting.ADMIN_ID)
 dispatcher = Dispatcher()
 
 
-def buttons_keyboard(
-        unique_id: int, keyboard_type: Literal["accept", "complete", "reject", "unlock", "comf_or_regect"] = "accept"
-) -> types.InlineKeyboardMarkup:
+def buttons_keyboard(unique_id: int,
+                     keyboard_type: Literal[
+                         "accept", "complete", "reject", "unlock", "comf_or_regect", "exit_chat", "open_user_chat"] = "accept"
+                     ) -> types.InlineKeyboardMarkup:
     """
     Формирует клавиатуру в зависимости от нужного варианта.
     'accept' - по умолчанию, кнопки Принять / Отменить.
@@ -99,6 +100,12 @@ def buttons_keyboard(
                 ),
             ],
         ]
+
+    elif keyboard_type == "exit_chat":
+        buttons = [[types.InlineKeyboardButton(text="Закрыть чат", callback_data="exit_chat")]]
+
+    elif keyboard_type == "open_user_chat":
+        buttons = [[types.InlineKeyboardButton(text="Начать чат", callback_data="open_user_chat")]]
 
     else:
         buttons = [
@@ -196,28 +203,46 @@ async def chat_user(callback: types.CallbackQuery, state: FSMContext):
     ticket_id = callback.data.split("_")[1]
     user_uid = get_ticket_by_id(int(ticket_id)).user_uid
     await state.update_data(user_uid=user_uid)
+    await bot.send_message(user_uid, text="Админ открыл чат.\n"
+                                          "Чтобы начать общение нажмите кнопку.",
+                           reply_markup=buttons_keyboard(user_uid, "open_user_chat"))
     await callback.message.reply("Введите сообщение для пользователя:")
-    await state.set_state(AdminChatState.waiting_for_admin_message)
+    await state.set_state(AdminChatState.waiting_for_message)
     await callback.answer()
 
 
-@dispatcher.message(AdminChatState.waiting_for_admin_message)
-async def admin_message(message: types.Message, state: FSMContext):
+@dispatcher.message(AdminChatState.waiting_for_message)
+async def waiting_for_admin_message(message: types.Message, state: FSMContext):
     data = await state.get_data()
     user_uid = data.get("user_uid")
-    await bot.send_message(user_uid, f"Сообщение от администратора: {message.text}\n\n"
-                                     f"Введите сообщение чтобы ответить.")
-    await state.set_state(AdminChatState.waiting_for_user_message)
-    #await state.set_state(None)
+    if message.chat.id == ADMIN_ID:
+        await bot.send_message(user_uid, text=f"Сообщение от администратора:\n\n {message.text}\n\n"
+                                              f"Введите сообщение чтобы ответить:")
+    else:
+        await bot.send_message(ADMIN_ID,
+                               text=f"Сообщение от пользователя {message.from_user.first_name}:\n\n {message.text}",
+                               reply_markup=buttons_keyboard(ADMIN_ID, "exit_chat"))
 
 
-@dispatcher.message(AdminChatState.waiting_for_user_message)
-async def user_message(message: types.Message, state: FSMContext):
-    admin_message = f"Сообщение от пользователя {message.from_user.full_name}: {message.text}"
-    await bot.send_message(ADMIN_ID, admin_message)
-    await state.set_state(AdminChatState.waiting_for_admin_message)
-
-    await message.answer("Ваше сообщение отправлено администратору.")
+@dispatcher.callback_query(lambda call: call.data in ["exit_chat", "open_user_chat"])
+async def exit_chat(callback: types.CallbackQuery, state: FSMContext) -> None:
+    data = await state.get_data()
+    user_uid = data.get("user_uid")
+    user_id = callback.message.chat.id
+    await callback.answer()
+    if callback.data == "exit_chat":
+        if user_id == ADMIN_ID:
+            await callback.message.reply("Чат закрыт.")
+            await bot.send_message(user_uid, text="Чат закрыт. Ожидайте решения проблемы.",
+                                   reply_markup=buttons_keyboard(ADMIN_ID, "exit_chat"))
+        else:
+            await callback.message.edit_text("Чат закрыт. Ожидайте решения проблемы.")
+        await state.set_state(None)
+        return
+    if callback.data == "open_user_chat":
+        await callback.message.reply("Чат открыт.\n"
+                                     "Введите сообщение чтобы ответить:")
+        await state.set_state(AdminChatState.waiting_for_message)
 
 
 @dispatcher.message(Command("help"))
