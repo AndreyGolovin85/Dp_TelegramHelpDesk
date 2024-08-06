@@ -43,3 +43,7 @@ class RegisterStates(StatesGroup):
     first_and_last_name = State()
     department = State()
     confirm = State()
+
+
+class AdminChatState(StatesGroup):
+    waiting_for_message = State()
