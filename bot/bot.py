@@ -251,13 +251,10 @@ async def cmd_help(message: types.Message):
         return
     await message.answer(
         "Основные команды для работы:\n"
-        "/register - команда для регистрации пользователя. При регистрации возможно указать свои имя/фамилию в формате"
-        "\n<pre>/register Имя Фамилия\nВаш отдел</pre>\n"
+        "/register - команда для регистрации пользователя.\n"
         "/new_ticket - команда для создания новой заявки.\n"
         "/tickets - команда для проверки ваших заявок.\n"
-        "/cancel - команда для отмены заявки <code>/cancel (номер тикета для отмены)</code>.\n"
-        "/complete - команда для самостоятельного закрытия заявки "
-        "<code>/complete (номер тикета для завершения)</code>.",
+        "/cancel - команда для отмены заявки <code>/cancel (номер тикета для отмены)</code>.\n",
         parse_mode=ParseMode.HTML,
     )
 
@@ -480,29 +477,6 @@ async def cmd_cancel_ticket(message: types.Message, command: CommandObject) -> N
     edit_ticket_status(ticket_id, "rejected", "Заявка отменена пользователем.")
     await message.reply(f"Ваш тикет под номером {ticket_id} успешно отменен.")
     await bot.send_message(chat_id=ADMIN_ID, text=f"Заявка {ticket_id} отменена пользователем.")
-
-
-@dispatcher.message(Command("complete"))
-async def cmd_complete_ticket(message: types.Message, command: CommandObject) -> None:
-    if check_blocked(message.from_user.id) is True:
-        await message.answer("Вы заблокированы. Обратитесь к администратору.")
-        return
-    if command.args is None:
-        await message.reply(
-            "Правильный вызов данной команды: */complete <номер тикета для завершения>*"
-            "\nИспользовать, если проблема решена.",
-            parse_mode=ParseMode.MARKDOWN,
-        )
-        tickets = active_tickets(message.chat.id)
-        await message.answer(tickets)
-        return
-    ticket_id = int(command.args)
-    if not get_ticket_by_id(ticket_id):
-        await message.reply("Вы не создавали тикета с таким номером.")
-        return
-    edit_ticket_status(ticket_id, "completed", "Заявка завершена пользователем.")
-    await message.reply(f"Ваш тикет под номером {ticket_id} успешно завершен.")
-    await bot.send_message(chat_id=ADMIN_ID, text=f"Заявка {ticket_id} завершена пользователем.")
 
 
 @dispatcher.message(Command("check_admin"))
