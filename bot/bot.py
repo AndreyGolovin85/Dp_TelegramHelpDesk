@@ -7,8 +7,7 @@ from aiogram import Bot, Dispatcher, filters, types
 from aiogram.enums import ParseMode
 from aiogram.filters.command import Command, CommandObject
 from aiogram.fsm.context import FSMContext
-from aiogram.types import BotCommand, BotCommandScopeChat, BotCommandScopeDefault, InlineKeyboardMarkup, \
-    InlineKeyboardButton
+from aiogram.types import BotCommand, BotCommandScopeChat, BotCommandScopeDefault
 from aiogram.utils.deep_linking import create_start_link
 from aiogram.utils.formatting import Text
 from custom_types import RegisterStates, TicketStates, AdminChatState
@@ -46,60 +45,21 @@ def buttons_keyboard(unique_id: int,
 
     if keyboard_type == "accept":
         buttons = [
-            [
-                types.InlineKeyboardButton(
-                    text="Принять заявку",
-                    callback_data=f"ticket_accept_{unique_id}",
-                ),
-                types.InlineKeyboardButton(
-                    text="Отменить заявку",
-                    callback_data=f"ticket_canceled_{unique_id}",
-                ),
-            ],
-            [
-                types.InlineKeyboardButton(
-                    text="Открыть чат с пользователем",
-                    callback_data=f"user-chat_{unique_id}"
-                ),
-            ]
-        ]
+            [types.InlineKeyboardButton(text="Принять заявку", callback_data=f"ticket_accept_{unique_id}"),
+             types.InlineKeyboardButton(text="Отменить заявку", callback_data=f"ticket_canceled_{unique_id}"), ],
+            [types.InlineKeyboardButton(text="Открыть чат с пользователем", callback_data=f"user-chat_{unique_id}"), ]]
     elif keyboard_type == "complete":
-        buttons = [
-            [
-                types.InlineKeyboardButton(
-                    text="Отменить заявку",
-                    callback_data=f"ticket_canceled_{unique_id}",
-                ),
-                types.InlineKeyboardButton(
-                    text="Закрыть заявку",
-                    callback_data=f"ticket_completed_{unique_id}",
-                ),
-            ],
-        ]
+        buttons = [[types.InlineKeyboardButton(text="Отменить заявку", callback_data=f"ticket_canceled_{unique_id}"),
+                    types.InlineKeyboardButton(text="Закрыть заявку",
+                                               callback_data=f"ticket_completed_{unique_id}"), ], ]
 
     elif keyboard_type == "reject":
-        buttons = [
-            [
-                types.InlineKeyboardButton(
-                    text="Отменить заявку",
-                    callback_data=f"ticket_usercancel_{unique_id}",
-                ),
-            ],
-        ]
+        buttons = [[types.InlineKeyboardButton(text="Отменить заявку",
+                                               callback_data=f"ticket_usercancel_{unique_id}"), ], ]
 
     elif keyboard_type == "comf_or_regect":
-        buttons = [
-            [
-                types.InlineKeyboardButton(
-                    text="Подтвердить",
-                    callback_data="confirm"
-                ),
-                types.InlineKeyboardButton(
-                    text="Отменить",
-                    callback_data="reject"
-                ),
-            ],
-        ]
+        buttons = [[types.InlineKeyboardButton(text="Подтвердить", callback_data="confirm"),
+                    types.InlineKeyboardButton(text="Отменить", callback_data="reject"), ], ]
 
     elif keyboard_type == "exit_chat":
         buttons = [[types.InlineKeyboardButton(text="Закрыть чат", callback_data="exit_chat")]]
@@ -108,14 +68,8 @@ def buttons_keyboard(unique_id: int,
         buttons = [[types.InlineKeyboardButton(text="Начать чат", callback_data="open_user_chat")]]
 
     else:
-        buttons = [
-            [
-                types.InlineKeyboardButton(
-                    text="Разблокировать пользователя.",
-                    callback_data=f"user_unlock_{unique_id}",
-                )
-            ]
-        ]
+        buttons = [[types.InlineKeyboardButton(text="Разблокировать пользователя.",
+                                               callback_data=f"user_unlock_{unique_id}", )]]
     return types.InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
@@ -532,7 +486,6 @@ async def set_commands(is_admin):
             BotCommand(command="new_ticket", description="Команда для создания новой заявки"),
             BotCommand(command="tickets", description="Команда для проверки ваших заявок"),
             BotCommand(command="cancel", description="Команда для отмены заявки"),
-            BotCommand(command="complete", description="Команда для самостоятельного закрытия заявки"),
             BotCommand(command="help", description="Справка по командам"),
             BotCommand(command="tickets", description="Команда для создания новой заявки"),
             BotCommand(command="check_admin", description="Команда для проверки статуса Admin"),
@@ -547,7 +500,6 @@ async def set_commands(is_admin):
             BotCommand(command="new_ticket", description="Команда для создания новой заявки"),
             BotCommand(command="tickets", description="Команда для проверки ваших заявок"),
             BotCommand(command="cancel", description="Команда для отмены заявки"),
-            BotCommand(command="complete", description="Команда для самостоятельного закрытия заявки"),
             BotCommand(command="help", description="Справка по командам"),
         ]
         await bot.set_my_commands(commands, BotCommandScopeDefault())
