@@ -1,9 +1,7 @@
-import logging
 from typing import Literal
 import asyncio
-import sys
 
-from aiogram import Bot, Dispatcher, filters, types
+from aiogram import Bot, filters, types, Dispatcher
 from aiogram.enums import ParseMode
 from aiogram.filters.command import Command, CommandObject
 from aiogram.fsm.context import FSMContext
@@ -15,10 +13,6 @@ from db_utils import add_blocked_user, add_ticket, all_blocked_users, check_bloc
     get_ticket_by_id, list_tickets, unblock_user
 from utils import active_tickets, answer_register, check_user_registration, new_ticket, raw_reply, reply_list
 import settings as setting
-
-if not setting.API_TOKEN or not setting.ADMIN_ID or not setting.ACCESS_KEY:
-    logging.error("Отсутствуют переменные ENV.")
-    sys.exit(1)
 
 bot = Bot(token=setting.API_TOKEN)
 ADMIN_ID = int(setting.ADMIN_ID)
@@ -76,7 +70,7 @@ async def manage_users(callback: types.CallbackQuery):
     _, action, uid = callback.data.split("_")
     if action == "unlock":
         unblock_user(uid)
-        till_block_counter.pop(int(uid))
+        setting.till_block_counter.pop(int(uid))
         await callback.message.edit_text(f"Пользователь {uid} разблокирован.")
         await bot.send_message(chat_id=uid, text="Вы были разблокированы администратором бота.")
     await callback.answer()
@@ -205,9 +199,6 @@ async def cmd_help(message: types.Message):
     )
 
 
-till_block_counter = {}
-
-
 @dispatcher.message(Command("start"))
 async def cmd_start(message: types.Message, command: CommandObject):
     if check_blocked(message.from_user.id) is True:
@@ -221,14 +212,14 @@ async def cmd_start(message: types.Message, command: CommandObject):
             "помощью по командам /help."
         )
         return
-    if message.chat.id not in till_block_counter:
-        till_block_counter[message.from_user.id] = 5
-    if till_block_counter[message.from_user.id] > 0:
+    if message.chat.id not in setting.till_block_counter:
+        setting.till_block_counter[message.from_user.id] = 5
+    if setting.till_block_counter[message.from_user.id] > 0:
         await message.answer(
             f"Вы не предоставили ключ доступа к боту или ваш ключ неверен. "
-            f"У вас осталось {till_block_counter[message.from_user.id]} попыток до блокировки."
+            f"У вас осталось {setting.till_block_counter[message.from_user.id]} попыток до блокировки."
         )
-        till_block_counter[message.from_user.id] -= 1
+        setting.till_block_counter[message.from_user.id] -= 1
     else:
         add_blocked_user(message.from_user.id, message.from_user.username)
         await message.answer("Вы были заблокированы. Обратитесь к администратору бота для разблокировки.")
@@ -465,7 +456,7 @@ async def cmd_unblock_user(message: types.Message, command: CommandObject) -> No
         else:
             await message.answer("На данный момент нет заблокированных пользователей.")
     unblock_user(int(command.args))
-    till_block_counter.pop(int(command.args))
+    setting.till_block_counter.pop(int(command.args))
     await bot.send_message(chat_id=int(command.args), text="Вы были разблокированы администратором бота.")
     if not check_blocked(int(command.args)):
         await message.answer(f"Пользователь {int(command.args)} разблокирован.")
@@ -506,12 +497,7 @@ async def main():
 
 
 if __name__ == "__main__":
-    logging.basicConfig(
-        level=logging.INFO,
-        format="[%(asctime)s] - %(filename)s:%(lineno)d #%(levelname)-s - %(name)s - %(message)s",
-        filename="bot.log",
-        filemode="w",
-    )
+    setting.setup_logging(log_file="../botlog/bot.log")
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
