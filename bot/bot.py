@@ -11,21 +11,13 @@ from aiogram.types import BotCommand, BotCommandScopeChat, BotCommandScopeDefaul
 from aiogram.utils.deep_linking import create_start_link
 from aiogram.utils.formatting import Text
 from custom_types import RegisterStates, TicketStates, AdminChatState
-from db import (
-    add_blocked_user,
-    add_ticket,
-    all_blocked_users,
-    check_blocked,
-    edit_ticket_status,
-    get_ticket_by_id,
-    list_tickets,
-    unblock_user,
-)
+from db_utils import add_blocked_user, add_ticket, all_blocked_users, check_blocked, edit_ticket_status,\
+    get_ticket_by_id, list_tickets, unblock_user
 from utils import active_tickets, answer_register, check_user_registration, new_ticket, raw_reply, reply_list
 import settings as setting
 
 if not setting.API_TOKEN or not setting.ADMIN_ID or not setting.ACCESS_KEY:
-    logging.error("Отстутствуют переменные ENV.")
+    logging.error("Отсутствуют переменные ENV.")
     sys.exit(1)
 
 bot = Bot(token=setting.API_TOKEN)
