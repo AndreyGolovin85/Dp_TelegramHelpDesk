@@ -1,7 +1,8 @@
 from aiogram.types import Message
 from aiogram.utils.formatting import Text, as_list
 from custom_types import TicketDict, UserDTO
-from db import User, add_user, get_user_by_uid, list_ticket_ids
+from db import User
+from db_utils import add_user, get_user_by_uid, list_ticket_ids
 
 
 async def answer_register(
