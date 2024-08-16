@@ -497,7 +497,7 @@ async def main():
 
 
 if __name__ == "__main__":
-    #setting.setup_logging(log_file="../botlog/bot.log")
+    setting.setup_logging(log_file="../botlog/bot.log")
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
