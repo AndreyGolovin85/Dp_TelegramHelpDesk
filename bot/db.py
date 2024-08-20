@@ -4,7 +4,7 @@ from custom_types import TicketDict, status_type
 from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, create_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, MappedAsDataclass, mapped_column, relationship, sessionmaker
 
-import settings as setting
+from settings import *
 
 
 class Base(MappedAsDataclass, DeclarativeBase, repr=False, unsafe_hash=True, kw_only=True):
@@ -61,8 +61,7 @@ class Ticket(Base, sessionmaker):
         return TicketDict(user_uid=self.user_uid, title=self.title, description=self.description, status=self.status)
 
 
-#engine = create_engine("sqlite:///bot.db", echo=True)
-engine = create_engine(setting.engine, echo=True)
+engine = create_engine(engine, echo=True)
 
 Base.metadata.create_all(engine)
 Session = sessionmaker(autoflush=False, bind=engine)
