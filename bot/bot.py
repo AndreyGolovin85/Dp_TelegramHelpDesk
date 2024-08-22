@@ -436,6 +436,7 @@ async def cmd_check_authority(message: types.Message) -> None:
 @dispatcher.message(Command("block"))
 async def cmd_block_user(message: types.Message, command: CommandObject) -> None:
     if message.chat.id != ADMIN_ID:
+        await message.answer(f"Вы не являетесь администратором. Нет доступа.")
         return
     if command.args is None:
         await message.reply("Укажите UID пользователя для блокировки.")
@@ -458,9 +459,10 @@ async def cmd_unblock_user(message: types.Message, command: CommandObject) -> No
         else:
             await message.answer("На данный момент нет заблокированных пользователей.")
             return
-    unblock_user(command.args)
-    setting.till_block_counter.pop(command.args)
-    await bot.send_message(chat_id=int(command.args), text="Вы были разблокированы администратором бота.")
+    if command.args:
+        unblock_user(int(command.args))
+        setting.till_block_counter.pop(int(command.args))
+        await bot.send_message(chat_id=int(command.args), text="Вы были разблокированы администратором бота.")
     if not check_blocked(int(command.args)):
         await message.answer(f"Пользователь {int(command.args)} разблокирован.")
 
