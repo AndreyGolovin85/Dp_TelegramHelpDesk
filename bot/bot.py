@@ -323,6 +323,7 @@ async def process_confirm(callback: types.CallbackQuery, state: FSMContext) -> N
 @dispatcher.message(Command("tickets"))
 async def cmd_tickets(message: types.Message, command: CommandObject) -> None:
     if check_blocked(message.from_user.id) is True:
+        await message.answer("Вы заблокированы. Обратитесь к администратору.")
         return
     if not check_user_registration(message.chat.id):
         await message.answer("Вы не зарегистрированы.")
@@ -435,6 +436,7 @@ async def cmd_check_authority(message: types.Message) -> None:
 @dispatcher.message(Command("block"))
 async def cmd_block_user(message: types.Message, command: CommandObject) -> None:
     if message.chat.id != ADMIN_ID:
+        await message.answer(f"Вы не являетесь администратором. Нет доступа.")
         return
     if command.args is None:
         await message.reply("Укажите UID пользователя для блокировки.")
@@ -447,6 +449,7 @@ async def cmd_block_user(message: types.Message, command: CommandObject) -> None
 @dispatcher.message(Command("unblock"))
 async def cmd_unblock_user(message: types.Message, command: CommandObject) -> None:
     if message.chat.id != ADMIN_ID:
+        await message.answer(f"Вы не являетесь администратором. Нет доступа.")
         return
     if command.args is None:
         await message.reply("Укажите UID пользователя для разблокировки.")
@@ -455,9 +458,11 @@ async def cmd_unblock_user(message: types.Message, command: CommandObject) -> No
                 await message.answer(f"{user[0]}: {user[1]}", reply_markup=buttons_keyboard(user[0], "unlock"))
         else:
             await message.answer("На данный момент нет заблокированных пользователей.")
-    unblock_user(int(command.args))
-    setting.till_block_counter.pop(int(command.args))
-    await bot.send_message(chat_id=int(command.args), text="Вы были разблокированы администратором бота.")
+            return
+    if command.args:
+        unblock_user(int(command.args))
+        setting.till_block_counter.pop(int(command.args))
+        await bot.send_message(chat_id=int(command.args), text="Вы были разблокированы администратором бота.")
     if not check_blocked(int(command.args)):
         await message.answer(f"Пользователь {int(command.args)} разблокирован.")
 

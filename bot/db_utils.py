@@ -3,7 +3,7 @@ from collections.abc import Sequence
 from sqlalchemy import select
 
 from custom_types import UserDTO, TicketDictID, status_type, TicketDict
-from db import User, Session, Ticket, BlockedUser
+from models import User, Session, Ticket, BlockedUser
 
 
 # Функции обработки пользователя.
@@ -93,10 +93,15 @@ def add_ticket(ticket_dict: TicketDict) -> int:
 
 
 # Функции обработки заблокированных пользователей.
-def add_blocked_user(uid: int, user_name: str):
+def add_blocked_user(user_uid: int, user_name: str):
     with Session() as session:
-        blocked_user = BlockedUser(user_uid=uid, username=user_name)
-        session.add(blocked_user)
+        blocked_user = session.query(BlockedUser).filter_by(user_uid=user_uid).one_or_none()
+        if not blocked_user:
+            blocked_user = BlockedUser(user_uid=user_uid, username=user_name, is_blocked=True)
+            session.add(blocked_user)
+        else:
+            blocked_user.is_blocked = True
+
         session.commit()
 
 
@@ -104,15 +109,19 @@ def unblock_user(user_uid: int):
     with Session() as session:
         blocked_user = session.query(BlockedUser).filter_by(user_uid=user_uid).one_or_none()
         if blocked_user:
-            session.delete(blocked_user)
-            session.commit()
+            if blocked_user.is_blocked:
+                blocked_user.is_blocked = False
+                session.commit()
 
 
 def check_blocked(user_uid: int) -> bool:
     with Session() as session:
-        return bool(session.query(BlockedUser).filter_by(user_uid=user_uid).one_or_none())
+        blocked_user = session.query(BlockedUser).filter_by(user_uid=user_uid).one_or_none()
+        if blocked_user:
+            return blocked_user.is_blocked
 
 
 def all_blocked_users():
     with Session() as session:
-        return [[user.user_uid, user.username] for user in session.query(BlockedUser).all()]
+        return [[blocked_user.user_uid, blocked_user.username]
+                for blocked_user in session.query(BlockedUser).filter(BlockedUser.is_blocked).all()]

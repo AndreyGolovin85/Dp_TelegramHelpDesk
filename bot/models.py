@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 
 from custom_types import TicketDict, status_type
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, create_engine
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, create_engine, Boolean
 from sqlalchemy.orm import DeclarativeBase, Mapped, MappedAsDataclass, mapped_column, relationship, sessionmaker
 
 from settings import *
@@ -38,6 +38,7 @@ class BlockedUser(Base, sessionmaker):
     __tablename__ = "blocked_users"
     user_uid: Mapped[int] = mapped_column(Integer)
     username: Mapped[str] = mapped_column(String)
+    is_blocked: Mapped[bool] = mapped_column(Boolean, default=False)
 
 
 class Ticket(Base, sessionmaker):
