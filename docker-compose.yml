@@ -1,6 +1,17 @@
 version: "3.9"
 
 services:
+  bot:
+    build:
+      context: .
+    image: andreygolovin5/telegrambot
+    env_file:
+      - .env
+    restart: always
+    depends_on:
+      - db
+    command: >
+      sh -c "cd ./bot && alembic upgrade head && cd ../. && python bot/bot.py"
   db:
     image: postgres:15.1-alpine
     environment:
